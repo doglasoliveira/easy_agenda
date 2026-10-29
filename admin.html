@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Painel do Estúdio</title>
+<style>
+  :root {
+    --bg: #f6f3f0; --card: #fff; --ink: #1f1b18; --muted: #74695f; --line: #e6ddd4; --soft: #faf7f4;
+    --accent: #b5527a; --accent-ink: #fff; --accent-soft: #f6e6ed;
+    --ok: #1a7f4b; --ok-soft: #e3f4ea; --warn: #9a6200; --warn-soft: #fdf1d8;
+    --info: #2357b5; --info-soft: #e5edfb; --err: #b42318; --err-soft: #fde8e6; --grey-soft: #eeeae6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141210; --card: #1f1b18; --ink: #f3ede8; --muted: #a89c92; --line: #37302b; --soft: #191614;
+      --accent: #e08aad; --accent-ink: #1a1214; --accent-soft: #3a2630;
+      --ok: #5fd193; --ok-soft: #173326; --warn: #f2b84b; --warn-soft: #3a2c10;
+      --info: #8fb2ff; --info-soft: #1b2742; --err: #ff8a7f; --err-soft: #3d1a17; --grey-soft: #2c2622; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  [hidden] { display: none !important; }
+  h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 15px; margin-bottom: 12px; }
+  a { color: var(--accent); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  /* login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .login form { width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; }
+  .login h1 { font-size: 22px; margin-bottom: 4px; }
+
+  /* shell */
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; max-width: 1120px; margin: 0 auto; }
+  .top h1 { font-size: 19px; }
+  .top a { font-size: 13px; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; max-width: 1120px; margin: 0 auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; font: inherit; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tabs .count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; text-align: center; line-height: 18px; }
+  main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 80px; display: grid; gap: 16px; }
+  .demo { background: var(--warn-soft); color: var(--warn); text-align: center; font-size: 13px; padding: 8px 16px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; min-width: 0; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* forms */
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field label, .lbl { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  input, select, textarea { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; min-width: 0; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  input[type=checkbox] { width: auto; accent-color: var(--accent); }
+  .field label.check { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); font-size: 14px; }
+  .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+  .checks { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 4px 0; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stack { display: grid; gap: 12px; }
+  .inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .inline input { width: auto; flex: 1 1 160px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.ok { color: var(--ok); }
+  .btn.danger { color: var(--err); }
+  .btn.sm { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .err { color: var(--err); font-size: 14px; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .kpi b { display: block; font-size: 26px; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .kpi small { color: var(--muted); font-size: 12px; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .bars { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; font-size: 14px; }
+  .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar { height: 10px; border-radius: 6px; background: var(--grey-soft); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+  .bar-row .val { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .bar-row .val small { color: var(--muted); }
+  .chart svg { width: 100%; height: auto; max-height: 260px; display: block; }
+  .chart .lbl-axis { fill: var(--muted); font-size: 10px; }
+  .chart rect.col { fill: var(--accent); }
+  .chart rect.col:hover { opacity: .75; }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .b-pending { background: var(--warn-soft); color: var(--warn); }
+  .b-confirmed { background: var(--info-soft); color: var(--info); }
+  .b-done { background: var(--ok-soft); color: var(--ok); }
+  .b-noshow { background: var(--err-soft); color: var(--err); }
+  .b-off { background: var(--grey-soft); color: var(--muted); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); font-size: 13px; }
+  .chip button { background: none; border: 0; color: inherit; cursor: pointer; padding: 0; font-size: 15px; line-height: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* bookings */
+  .bk-list { display: grid; }
+  .bk { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .bk:last-child { border-bottom: 0; }
+  .bk-when b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .bk-when small { color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  .bk-main { min-width: 0; }
+  .bk-main small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .bk-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  @media (max-width: 560px) { .bk { grid-template-columns: 56px 1fr; } .bk-act { grid-column: 1 / -1; justify-content: flex-start; } }
+
+  /* pros */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .pro h3 { margin: 0; font-size: 17px; }
+  .pro .hours { font-size: 13px; color: var(--muted); margin: 10px 0; display: grid; gap: 2px; }
+  .pro .hours b { color: var(--ink); font-weight: 600; display: inline-block; width: 34px; }
+
+  .hours-edit { display: grid; gap: 8px; }
+  .hours-edit .hr { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: center; }
+  .hours-edit .hr span { font-size: 14px; font-weight: 600; }
+
+  dialog { border: 0; border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); background: var(--card); color: var(--ink); }
+  dialog::backdrop { background: rgba(20, 15, 12, .45); }
+  dialog form { padding: 22px; display: grid; gap: 14px; }
+  dialog h3 { font-size: 18px; margin: 0; }
+  .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100vw - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.2); z-index: 10; }
+  .toast.bad { background: var(--err); color: #fff; }
+  .spinner { width: 22px; height: 22px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 24px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div id="demoBanner" class="demo" hidden>Modo demonstração com dados fictícios. Cola o URL do Apps Script em <code>API_URL</code> para ligar ao estúdio real.</div>
+
+<div id="login" class="login" hidden>
+  <form id="loginForm" class="stack">
+    <div>
+      <h1>Painel do estúdio</h1>
+      <p class="muted small" style="margin:4px 0 0">Entra com a senha de administração.</p>
+    </div>
+    <div class="field"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required></div>
+    <button class="btn primary" type="submit">Entrar</button>
+    <p class="err" id="loginErr" hidden></p>
+  </form>
+</div>
+
+<div id="shell" hidden>
+  <header class="top">
+    <div>
+      <h1 id="studioName">Painel</h1>
+      <a id="siteLink" target="_blank" rel="noopener" hidden>Ver site de marcações ↗</a>
+    </div>
+    <button class="btn sm" id="logout">Sair</button>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button data-tab="reports">Relatórios</button>
+    <button data-tab="bookings">Marcações <span class="count" id="pendingCount" hidden></span></button>
+    <button data-tab="pros">Profissionais</button>
+    <button data-tab="services">Serviços</button>
+    <button data-tab="blocks">Folgas</button>
+    <button data-tab="settings">Definições</button>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<dialog id="dlg"><form id="dlgForm" novalidate></form></dialog>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ======== CONFIGURAÇÃO: o mesmo URL do Apps Script usado no index.html (termina em /exec) ======== */
+const API_URL = '';
+/* ================================================================================================ */
+
+const DEMO_MODE = !API_URL;
+const session = {
+  get: k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} },
+  del: k => { try { sessionStorage.removeItem(k); } catch (e) {} },
+};
+
+let TOKEN = session.get('agenda_token');
+let DATA = null;
+let TAB = 'reports';
+
+/* ---------- utilitários ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const money = n => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: DATA?.settings?.currency || 'EUR' }).format(n || 0);
+const fmtDay = s => new Intl.DateTimeFormat('pt-PT', { weekday: 'short', day: '2-digit', month: 'short' }).format(parseISO(s)).replace(/\./g, '');
+const fmtDayLong = s => new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parseISO(s));
+const WD = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const WD_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const ORDER = [1, 2, 3, 4, 5, 6, 0];
+const STATUS = { pending: 'Pendente', confirmed: 'Confirmado', done: 'Realizado', noshow: 'Faltou' };
+const badge = s => `<span class="badge b-${s}">${STATUS[s] || esc(s)}</span>`;
+const sum = (arr, f) => arr.reduce((a, x) => a + (+f(x) || 0), 0);
+const svcName = id => DATA.services.find(s => s.id === id)?.name || id;
+
+function toast(msg, bad) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = 'toast' + (bad ? ' bad' : ''); t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), bad ? 5000 : 2800);
+}
+
+async function call(op, params = {}) {
+  if (DEMO_MODE) return demoCall(op, JSON.parse(JSON.stringify(params)));
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita o preflight de CORS
+    body: JSON.stringify({ action: 'admin', op, token: TOKEN, ...params }),
+  });
+  const j = await r.json();
+  if (j.error) { if (j.auth) logout(j.error); throw new Error(j.error); }
+  return j;
+}
+
+/* ---------- diálogo genérico ---------- */
+function openDialog(html, onSave, { saveLabel = 'Guardar', extraLeft = '' } = {}) {
+  const dlg = $('#dlg'), form = $('#dlgForm');
+  form.innerHTML = html + `<p class="err" id="dlgErr" hidden></p>
+    <div class="dlg-actions">${extraLeft}<span style="flex:1"></span>
+      <button type="button" class="btn" id="dlgCancel">Cancelar</button>
+      <button type="submit" class="btn primary">${saveLabel}</button></div>`;
+  $('#dlgCancel').onclick = () => dlg.close();
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type=submit]');
+    const err = $('#dlgErr');
+    err.hidden = true; btn.disabled = true;
+    try { await onSave(form); dlg.close(); }
+    catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    finally { btn.disabled = false; }
+  };
+  dlg.showModal();
+  return form;
+}
+
+/* ---------- arranque e sessão ---------- */
+function showLogin(msg) {
+  $('#shell').hidden = true; $('#login').hidden = false;
+  const e = $('#loginErr'); e.hidden = !msg; e.textContent = msg || '';
+  setTimeout(() => $('#pw').focus(), 50);
+}
+function logout(msg) { TOKEN = null; session.del('agenda_token'); showLogin(msg); }
+
+$('#loginForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button');
+  btn.disabled = true; $('#loginErr').hidden = true;
+  try {
+    const r = await call('login', { password: $('#pw').value });
+    TOKEN = r.token; session.set('agenda_token', TOKEN);
+    $('#pw').value = '';
+    await loadAll();
+  } catch (ex) { showLogin(ex.message); }
+  finally { btn.disabled = false; }
+};
+$('#logout').onclick = () => logout();
+$('#tabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) { TAB = b.dataset.tab; render(); } };
+
+async function loadAll() {
+  DATA = await call('getAll');
+  $('#login').hidden = true; $('#shell').hidden = false;
+  applyHeader();
+  render();
+  refreshPendingCount();
+}
+function applyHeader() {
+  $('#studioName').textContent = DATA.settings.studioName;
+  document.title = 'Painel · ' + DATA.settings.studioName;
+  const link = $('#siteLink');
+  link.hidden = !DATA.settings.siteUrl; link.href = DATA.settings.siteUrl || '#';
+}
+async function refreshPendingCount() {
+  try {
+    const t = today();
+    const { rows } = await call('listBookings', { from: iso(t), to: iso(addDays(t, DATA.settings.maxDaysAhead)) });
+    const n = rows.filter(r => r.status === 'pending').length;
+    const el = $('#pendingCount'); el.hidden = !n; el.textContent = n;
+  } catch (e) { /* ignora */ }
+}
+
+function render() {
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === TAB));
+  const v = $('#view');
+  ({ reports: renderReports, bookings: renderBookings, pros: renderPros, services: renderServices,
+     blocks: renderBlocks, settings: renderSettings }[TAB])(v);
+}
+
+/* =============================== RELATÓRIOS =============================== */
+const R = { limit: 50, period: 'month', from: '', to: '', pro: '', service: '', status: '', rows: null, key: '' };
+
+function periodRange(p) {
+  const t = today(), y = t.getFullYear(), m = t.getMonth();
+  return {
+    month: [new Date(y, m, 1), new Date(y, m + 1, 0)],
+    lastmonth: [new Date(y, m - 1, 1), new Date(y, m, 0)],
+    '7': [addDays(t, -6), t],
+    '30': [addDays(t, -29), t],
+    '90': [addDays(t, -89), t],
+    year: [new Date(y, 0, 1), new Date(y, 11, 31)],
+  }[p];
+}
+
+function renderReports(el) {
+  if (R.period !== 'custom') { const [a, b] = periodRange(R.period); R.from = iso(a); R.to = iso(b); }
+  const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
+  el.innerHTML = `
+    <section class="card">
+      <div class="grid-auto">
+        <div class="field"><label for="fPeriod">Período</label><select id="fPeriod">
+          ${opt('month', 'Este mês', R.period)}${opt('lastmonth', 'Mês passado', R.period)}${opt('7', 'Últimos 7 dias', R.period)}
+          ${opt('30', 'Últimos 30 dias', R.period)}${opt('90', 'Últimos 90 dias', R.period)}${opt('year', 'Este ano', R.period)}${opt('custom', 'Personalizado…', R.period)}
+        </select></div>
+        <div class="field" data-custom><label for="fFrom">De</label><input type="date" id="fFrom" value="${R.from}"></div>
+        <div class="field" data-custom><label for="fTo">Até</label><input type="date" id="fTo" value="${R.to}"></div>
+        <div class="field"><label for="fPro">Profissional</label><select id="fPro">${opt('', 'Todos', R.pro)}
+          ${DATA.professionals.map(p => opt(p.id, p.name + (p.active === false ? ' (inativo)' : ''), R.pro)).join('')}</select></div>
+        <div class="field"><label for="fSvc">Serviço</label><select id="fSvc">${opt('', 'Todos', R.service)}
+          ${DATA.services.map(s => opt(s.id, s.name + (s.active === false ? ' (inativo)' : ''), R.service)).join('')}</select></div>
+        <div class="field"><label for="fStatus">Estado (tabela)</label><select id="fStatus">${opt('', 'Todos', R.status)}
+          ${Object.entries(STATUS).map(([k, l]) => opt(k, l, R.status)).join('')}</select></div>
+      </div>
+    </section>
+    <div id="repBody" class="stack"><div class="spinner"></div></div>`;
+
+  $$('[data-custom]').forEach(x => (x.hidden = R.period !== 'custom'));
+  $('#fPeriod').onchange = e => { R.period = e.target.value; renderReports(el); };
+  $('#fFrom').onchange = e => { R.from = e.target.value; loadReport(); };
+  $('#fTo').onchange = e => { R.to = e.target.value; loadReport(); };
+  R.limit = 50;
+  $('#fPro').onchange = e => { R.pro = e.target.value; drawReport(); };
+  $('#fSvc').onchange = e => { R.service = e.target.value; drawReport(); };
+  $('#fStatus').onchange = e => { R.status = e.target.value; drawReport(); };
+  loadReport();
+}
+
+async function loadReport() {
+  if (!R.from || !R.to || R.from > R.to) { $('#repBody').innerHTML = '<p class="err">Escolhe um período válido.</p>'; return; }
+  const key = R.from + '|' + R.to;
+  if (R.key === key && R.rows) return drawReport();
+  $('#repBody').innerHTML = '<div class="spinner"></div>';
+  try {
+    const { rows } = await call('listBookings', { from: R.from, to: R.to });
+    R.rows = rows; R.key = key;
+    drawReport();
+  } catch (e) { $('#repBody').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+function groupBy(rows, keyFn, labelFn) {
+  const m = new Map();
+  rows.forEach(r => {
+    const k = keyFn(r);
+    if (!m.has(k)) m.set(k, { label: labelFn(r), count: 0, revenue: 0 });
+    const g = m.get(k); g.count++; g.revenue += +r.price || 0;
+  });
+  return [...m.values()].sort((a, b) => b.revenue - a.revenue || b.count - a.count);
+}
+
+function barsHTML(groups) {
+  if (!groups.length) return '<p class="empty">Sem serviços realizados neste período.</p>';
+  const max = Math.max(...groups.map(g => g.revenue), 1);
+  return `<div class="bars">${groups.map(g => `
+    <div class="bar-row"><span class="name" title="${esc(g.label)}">${esc(g.label)}</span>
+      <div class="bar"><i style="width:${Math.max(2, (g.revenue / max) * 100)}%"></i></div>
+      <span class="val">${money(g.revenue)} <small>· ${g.count}</small></span></div>`).join('')}</div>`;
+}
+
+function timelineHTML(done) {
+  const from = parseISO(R.from), to = parseISO(R.to);
+  const days = Math.round((to - from) / 864e5) + 1;
+  const mode = days <= 35 ? 'day' : days <= 190 ? 'week' : 'month';
+  const keyOf = d => {
+    if (mode === 'day') return iso(d);
+    if (mode === 'week') { const x = addDays(d, -((d.getDay() + 6) % 7)); return iso(x); }
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  };
+  const buckets = new Map();
+  for (let d = new Date(from); d <= to; d = addDays(d, 1)) {
+    const k = keyOf(d);
+    if (!buckets.has(k)) {
+      const label = mode === 'month'
+        ? new Intl.DateTimeFormat('pt-PT', { month: 'short' }).format(d).replace('.', '')
+        : `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      buckets.set(k, { label, value: 0, count: 0 });
+    }
+  }
+  done.forEach(r => { const b = buckets.get(keyOf(parseISO(r.date))); if (b) { b.value += +r.price || 0; b.count++; } });
+  const list = [...buckets.values()];
+  const max = Math.max(...list.map(b => b.value), 1);
+  const W = 640, H = 190, top = 10, bottom = 22, left = 4;
+  const bw = (W - left) / list.length;
+  const every = Math.ceil(list.length / 12);
+  const cols = list.map((b, i) => {
+    const h = (b.value / max) * (H - top - bottom);
+    const x = left + i * bw + bw * 0.15;
+    return `<rect class="col" x="${x.toFixed(1)}" y="${(H - bottom - h).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${Math.max(h, b.value ? 1 : 0).toFixed(1)}" rx="2">
+      <title>${esc(b.label)}: ${money(b.value)} (${b.count} serviços)</title></rect>` +
+      (i % every === 0 ? `<text class="lbl-axis" x="${(left + i * bw + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(b.label)}</text>` : '');
+  }).join('');
+  const label = { day: 'por dia', week: 'por semana', month: 'por mês' }[mode];
+  return `<div class="row-between"><h3 style="margin:0">Faturação ${label}</h3><span class="muted small">máx. ${money(max)}</span></div>
+    <div class="chart" style="margin-top:10px"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Faturação ${label}">
+      <line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${cols}</svg></div>`;
+}
+
+function drawReport() {
+  const base = R.rows.filter(r => (!R.pro || r.pro === R.pro) && (!R.service || r.service === R.service));
+  const done = base.filter(r => r.status === 'done');
+  const noshow = base.filter(r => r.status === 'noshow');
+  const pending = base.filter(r => r.status === 'pending');
+  const upcoming = base.filter(r => r.status === 'confirmed');
+  const revenue = sum(done, r => r.price);
+  const noshowRate = done.length + noshow.length ? noshow.length / (done.length + noshow.length) : 0;
+  const clients = new Set(done.map(r => (r.email || r.phone || r.name).toLowerCase())).size;
+  const table = base.filter(r => !R.status || r.status === R.status).sort((a, b) => b.start - a.start);
+
+  $('#repBody').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span>Realizados</span><b>${done.length}</b><small>${clients} cliente${clients === 1 ? '' : 's'}</small></div>
+      <div class="kpi"><span>Faturação</span><b>${money(revenue)}</b><small>serviços realizados</small></div>
+      <div class="kpi"><span>Valor médio</span><b>${money(done.length ? revenue / done.length : 0)}</b><small>por serviço</small></div>
+      <div class="kpi"><span>Faltas</span><b>${noshow.length}</b><small>${(noshowRate * 100).toFixed(0)}% das marcações passadas</small></div>
+      <div class="kpi"><span>Agendados</span><b>${upcoming.length}</b><small>${money(sum(upcoming, r => r.price))} previstos</small></div>
+      <div class="kpi"><span>Pendentes</span><b>${pending.length}</b><small>a aguardar aprovação</small></div>
+    </div>
+    <section class="card">${timelineHTML(done)}</section>
+    <div class="two">
+      <section class="card"><h3>Por profissional</h3>${barsHTML(groupBy(done, r => r.pro, r => r.proName))}</section>
+      <section class="card"><h3>Por serviço</h3>${barsHTML(groupBy(done, r => r.service, r => r.serviceName))}</section>
+    </div>
+    <section class="card">
+      <div class="row-between" style="margin-bottom:8px"><h3 style="margin:0">Detalhe <span class="muted small">(${table.length})</span></h3>
+        <button class="btn sm" id="csv" ${table.length ? '' : 'disabled'}>Exportar CSV</button></div>
+      ${table.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Hora</th><th>Cliente</th><th>Serviço</th><th>Profissional</th><th class="num">Valor</th><th>Estado</th></tr></thead>
+        <tbody>${table.slice(0, R.limit).map(r => `<tr>
+          <td>${fmtDayLong(r.date)}</td><td>${r.time}</td>
+          <td>${esc(r.name)}${r.phone ? `<br><span class="muted small">${esc(r.phone)}</span>` : ''}</td>
+          <td>${esc(r.serviceName)}</td><td>${esc(r.proName)}</td><td class="num">${money(r.price)}</td><td>${badge(r.status)}</td></tr>`).join('')}
+        </tbody></table></div>${table.length > R.limit ? `<p style="text-align:center;margin:12px 0 0"><button class="btn sm" id="more">Mostrar mais (${table.length - R.limit} restantes)</button></p>` : ''}`
+        : '<p class="empty">Nada a mostrar com estes filtros.</p>'}
+    </section>`;
+  const b = $('#csv'); if (b) b.onclick = () => exportCSV(table);
+  const m = $('#more'); if (m) m.onclick = () => { R.limit += 100; drawReport(); };
+}
+
+function exportCSV(rows) {
+  const head = ['Data', 'Hora', 'Fim', 'Cliente', 'Telefone', 'E-mail', 'Serviço', 'Profissional', 'Valor', 'Estado', 'Origem', 'Notas'];
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [head.join(';'), ...rows.map(r => [
+    r.date, r.time, r.endTime, r.name, r.phone, r.email, r.serviceName, r.proName,
+    String(r.price).replace('.', ','), STATUS[r.status] || r.status, r.source === 'studio' ? 'Estúdio' : 'Online', r.notes,
+  ].map(q).join(';'))];
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `relatorio-${R.from}-a-${R.to}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* =============================== MARCAÇÕES =============================== */
+function renderBookings(el) {
+  el.innerHTML = `<div class="row-between"><h2>Marcações</h2><button class="btn primary" id="newBk">+ Nova marcação</button></div>
+    <div id="bkBody" class="stack"><div class="spinner"></div></div>`;
+  $('#newBk').onclick = openBookingDialog;
+  $('#bkBody').onclick = onBookingAction;
+  loadBookings();
+}
+
+async function loadBookings() {
+  const box = $('#bkBody');
+  try {
+    const t = today(), ti = iso(t);
+    const { rows } = await call('listBookings', { from: iso(addDays(t, -7)), to: iso(addDays(t, DATA.settings.maxDaysAhead)) });
+    const pending = rows.filter(r => r.status === 'pending');
+    const todays = rows.filter(r => r.date === ti && r.status !== 'pending');
+    const next = rows.filter(r => r.date > ti && r.status === 'confirmed');
+    const past = rows.filter(r => r.date < ti && r.status !== 'pending').reverse();
+    const el = $('#pendingCount'); el.hidden = !pending.length; el.textContent = pending.length;
+    const sec = (title, list, empty, note = '') => `<section class="card"><div class="row-between"><h3 style="margin:0">${title}
+      <span class="muted small">(${list.length})</span></h3>${note ? `<span class="muted small">${note}</span>` : ''}</div>
+      <div class="bk-list">${list.length ? list.map(bkItem).join('') : `<p class="empty">${empty}</p>`}</div></section>`;
+    box.innerHTML = sec('A aguardar aprovação', pending, 'Sem pedidos pendentes.') +
+      sec('Hoje', todays, 'Nada marcado para hoje.') +
+      sec('Próximos dias', next, 'Sem marcações futuras.') +
+      sec('Últimos 7 dias', past, 'Sem marcações.', 'Marca aqui quem faltou');
+  } catch (e) { box.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+function bkItem(r) {
+  const a = (act, label, cls = '') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(r.id)}" data-pro="${esc(r.pro)}" data-name="${esc(r.name)}">${label}</button>`;
+  const acts = {
+    pending: a('approve', 'Aprovar', 'ok') + a('reject', 'Recusar', 'danger'),
+    confirmed: a('cancel', 'Cancelar', 'danger'),
+    done: a('noshow', 'Faltou'),
+    noshow: a('undo', 'Desfazer falta'),
+  }[r.status] || '';
+  const contact = [r.phone, r.email].filter(Boolean).map(esc).join(' · ');
+  return `<div class="bk">
+    <div class="bk-when"><b>${r.time}</b><small>${fmtDay(r.date)}</small></div>
+    <div class="bk-main"><b>${esc(r.name)}</b> ${badge(r.status)}${r.source === 'studio' ? ' <span class="badge b-off">estúdio</span>' : ''}
+      <small>${esc(r.serviceName)} · ${esc(r.proName)} · ${money(r.price)}</small>
+      ${contact ? `<small>${contact}</small>` : ''}${r.notes ? `<small>“${esc(r.notes)}”</small>` : ''}</div>
+    <div class="bk-act">${acts}</div></div>`;
+}
+
+async function onBookingAction(e) {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const { act, id, pro, name } = b.dataset;
+  const status = { approve: 'confirmed', reject: 'rejected', cancel: 'cancelled', noshow: 'noshow', undo: 'confirmed' }[act];
+  if (act === 'reject' && !confirm(`Recusar o pedido de ${name}? O cliente é avisado por e-mail.`)) return;
+  if (act === 'cancel' && !confirm(`Cancelar a marcação de ${name}? O cliente é avisado por e-mail e o horário fica livre.`)) return;
+  b.disabled = true;
+  try {
+    await call('setStatus', { pro, id, status });
+    toast({ approve: 'Aprovada. O cliente recebeu a confirmação.', reject: 'Pedido recusado.', cancel: 'Marcação cancelada.',
+            noshow: 'Falta registada.', undo: 'Falta removida.' }[act]);
+    R.key = '';
+    loadBookings();
+  } catch (ex) { toast(ex.message, true); b.disabled = false; }
+}
+
+function openBookingDialog() {
+  const svcs = DATA.services.filter(s => s.active !== false);
+  const form = openDialog(`<h3>Nova marcação</h3>
+    <div class="grid2">
+      <div class="field"><label>Serviço</label><select name="service">${svcs.map(s => `<option value="${esc(s.id)}">${esc(s.name)} · ${s.duration} min</option>`).join('')}</select></div>
+      <div class="field"><label>Profissional</label><select name="pro"></select></div>
+      <div class="field"><label>Data</label><input type="date" name="date" value="${iso(today())}"></div>
+      <div class="field" data-auto><label>Hora</label><select name="time"></select></div>
+      <div class="field" data-manual hidden><label>Hora (manual)</label><input type="time" name="manual" step="300"></div>
+    </div>
+    <label class="check"><input type="checkbox" name="force"> Outra hora (ignorar disponibilidade e folgas)</label>
+    <div class="grid2">
+      <div class="field"><label>Nome do cliente</label><input name="name" required maxlength="80"></div>
+      <div class="field"><label>Telemóvel</label><input name="phone" type="tel" maxlength="30"></div>
+      <div class="field"><label>E-mail (opcional)</label><input name="email" type="email" maxlength="120"></div>
+      <div class="field"><label>Notas</label><input name="notes" maxlength="500"></div>
+    </div>
+    <p class="muted small" style="margin:0">Fica logo confirmada. Se indicares o e-mail, o cliente recebe a confirmação com o ficheiro para o calendário.</p>`,
+  async f => {
+    const force = f.force.checked;
+    const time = force ? f.manual.value : f.time.value;
+    if (!f.pro.value) throw new Error('Não há profissionais para este serviço.');
+    if (!time) throw new Error('Escolhe uma hora.');
+    if (!f.name.value.trim()) throw new Error('Indica o nome do cliente.');
+    await call('createBooking', { booking: { service: f.service.value, pro: f.pro.value, date: f.date.value, time, force,
+      name: f.name.value, phone: f.phone.value, email: f.email.value, notes: f.notes.value } });
+    toast('Marcação criada.'); R.key = '';
+    if (TAB === 'bookings') loadBookings();
+  }, { saveLabel: 'Criar marcação' });
+
+  const fillPros = () => {
+    const pros = DATA.professionals.filter(p => p.active !== false && p.services.includes(form.service.value));
+    form.pro.innerHTML = pros.length ? pros.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') : '<option value="">— nenhum —</option>';
+  };
+  const fillSlots = async () => {
+    form.time.innerHTML = '<option value="">A carregar…</option>';
+    if (!form.pro.value || !form.date.value) { form.time.innerHTML = '<option value="">—</option>'; return; }
+    try {
+      const { slots } = await call('slots', { pro: form.pro.value, service: form.service.value, date: form.date.value });
+      form.time.innerHTML = slots.length ? slots.map(t => `<option>${t}</option>`).join('') : '<option value="">Sem horários livres</option>';
+    } catch (e) { form.time.innerHTML = `<option value="">${esc(e.message)}</option>`; }
+  };
+  form.service.onchange = () => { fillPros(); fillSlots(); };
+  form.pro.onchange = fillSlots;
+  form.date.onchange = fillSlots;
+  form.force.onchange = () => { $('[data-auto]', form).hidden = form.force.checked; $('[data-manual]', form).hidden = !form.force.checked; };
+  fillPros(); fillSlots();
+}
+
+/* =============================== PROFISSIONAIS =============================== */
+const hoursText = arr => (arr || []).map(([a, b]) => `${a}-${b}`).join(', ');
+
+function parseHours(txt, day) {
+  if (!txt.trim()) return [];
+  return txt.split(/[,;]/).map(s => s.trim()).filter(Boolean).map(s => {
+    const m = s.match(/^(\d{1,2})(?:[:h](\d{2})|h)?\s*[-–]\s*(\d{1,2})(?:[:h](\d{2})|h)?$/i);
+    if (!m) throw new Error(`${day}: não percebi "${s}". Usa por exemplo 09:00-13:00, 14:00-19:00`);
+    const a = `${pad(+m[1])}:${m[2] || '00'}`, b = `${pad(+m[3])}:${m[4] || '00'}`;
+    if (+m[1] > 23 || +m[3] > 24 || a >= b) throw new Error(`${day}: intervalo inválido "${s}".`);
+    return [a, b];
+  });
+}
+
+function renderPros(el) {
+  const list = [...DATA.professionals].sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="row-between"><h2>Profissionais</h2><button class="btn primary" id="addPro">+ Novo profissional</button></div>
+    ${list.length ? `<div class="cards">${list.map(p => {
+      const hrs = ORDER.filter(d => (p.hours?.[d] || []).length);
+      return `<section class="card pro">
+        <div class="row-between"><div><h3>${esc(p.name)}</h3><span class="muted small">${esc(p.role || '')}</span></div>
+          ${p.active === false ? '<span class="badge b-off">Inativo</span>' : ''}</div>
+        <div class="chips" style="margin-top:10px">${p.services.map(id => `<span class="chip">${esc(svcName(id))}</span>`).join('') || '<span class="muted small">Sem serviços</span>'}</div>
+        <div class="hours">${hrs.length ? hrs.map(d => `<div><b>${WD_SHORT[d]}</b> ${esc(hoursText(p.hours[d]).replace(/-/g, '–'))}</div>`).join('') : '<div>Sem horário definido</div>'}</div>
+        <div class="row-between"><span class="muted small">${p.email ? `📅 ${esc(p.email)}${p.sharedWith === p.email ? ' · partilhado' : ''}` : 'Sem e-mail (calendário não partilhado)'}</span>
+          <button class="btn sm" data-edit="${esc(p.id)}">Editar</button></div>
+      </section>`; }).join('')}</div>` : '<p class="empty">Ainda não há profissionais.</p>'}`;
+  $('#addPro').onclick = () => openProDialog();
+  $$('[data-edit]', el).forEach(b => (b.onclick = () => openProDialog(DATA.professionals.find(p => p.id === b.dataset.edit))));
+}
+
+function openProDialog(p = { services: [], hours: {}, active: true }) {
+  openDialog(`<h3>${p.id ? 'Editar profissional' : 'Novo profissional'}</h3>
+    <div class="grid2">
+      <div class="field"><label>Nome</label><input name="name" value="${esc(p.name || '')}" required maxlength="60"></div>
+      <div class="field"><label>Função</label><input name="role" value="${esc(p.role || '')}" placeholder="Manicure, professor de piano…" maxlength="60"></div>
+    </div>
+    <div class="field"><label>E-mail (Google ou iCloud)</label><input name="email" type="email" value="${esc(p.email || '')}" maxlength="120">
+      <span class="muted small">Opcional. O calendário do profissional é partilhado com este e-mail para ele ver a agenda no telemóvel.</span></div>
+    <div class="field"><span class="lbl">Serviços que faz</span><div class="checks">
+      ${DATA.services.filter(s => s.active !== false || p.services.includes(s.id)).map(s => `<label class="check"><input type="checkbox" name="svc" value="${esc(s.id)}" ${p.services.includes(s.id) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">Cria primeiro os serviços.</span>'}
+    </div></div>
+    <div class="field"><span class="lbl">Horário semanal</span>
+      <div class="hours-edit">${ORDER.map(d => `<div class="hr"><span>${WD[d]}</span><input name="h${d}" value="${esc(hoursText(p.hours?.[d]))}" placeholder="folga · ex.: 09:00-13:00, 14:00-19:00"></div>`).join('')}</div>
+      <span class="muted small">Deixa em branco os dias de folga. Para várias pausas, separa os intervalos por vírgulas.</span></div>
+    <label class="check"><input type="checkbox" name="active" ${p.active !== false ? 'checked' : ''}> Ativo (aparece no site de marcações)</label>`,
+  async f => {
+    const hours = {};
+    ORDER.forEach(d => { const h = parseHours(f['h' + d].value, WD[d]); if (h.length) hours[d] = h; });
+    const pro = { id: p.id, name: f.name.value, role: f.role.value, email: f.email.value.trim(),
+      services: $$('input[name=svc]:checked', f).map(x => x.value), hours, active: f.active.checked };
+    if (!pro.name.trim()) throw new Error('Indica o nome.');
+    const r = await call('savePro', { pro });
+    DATA.professionals = r.professionals;
+    toast(r.info || 'Profissional guardado.');
+    render();
+  });
+}
+
+/* =============================== SERVIÇOS =============================== */
+function renderServices(el) {
+  const list = [...DATA.services].sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="row-between"><h2>Serviços</h2><button class="btn primary" id="addSvc">+ Novo serviço</button></div>
+    <section class="card">${list.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Serviço</th><th class="num">Duração</th><th class="num">Preço</th><th>Profissionais</th><th></th></tr></thead>
+      <tbody>${list.map(s => {
+        const pros = DATA.professionals.filter(p => p.active !== false && p.services.includes(s.id));
+        return `<tr><td><b>${esc(s.name)}</b> ${s.active === false ? '<span class="badge b-off">Inativo</span>' : ''}
+          ${s.description ? `<br><span class="muted small">${esc(s.description)}</span>` : ''}</td>
+          <td class="num">${s.duration} min</td><td class="num">${money(s.price)}</td>
+          <td>${pros.length ? pros.map(p => esc(p.name)).join(', ') : '<span class="muted small">Ninguém, não aparece no site</span>'}</td>
+          <td class="num"><button class="btn sm" data-edit="${esc(s.id)}">Editar</button></td></tr>`; }).join('')}
+      </tbody></table></div>` : '<p class="empty">Ainda não há serviços.</p>'}</section>`;
+  $('#addSvc').onclick = () => openSvcDialog();
+  $$('[data-edit]', el).forEach(b => (b.onclick = () => openSvcDialog(DATA.services.find(s => s.id === b.dataset.edit))));
+}
+
+function openSvcDialog(s = { duration: 60, price: 0, active: true }) {
+  openDialog(`<h3>${s.id ? 'Editar serviço' : 'Novo serviço'}</h3>
+    <div class="field"><label>Nome</label><input name="name" value="${esc(s.name || '')}" required maxlength="60"></div>
+    <div class="grid2">
+      <div class="field"><label>Duração (min)</label><input name="duration" type="number" min="5" max="600" step="5" value="${s.duration}"></div>
+      <div class="field"><label>Preço (${esc(DATA.settings.currency)})</label><input name="price" type="number" min="0" step="0.5" value="${s.price}"></div>
+    </div>
+    <div class="field"><label>Descrição curta</label><input name="description" value="${esc(s.description || '')}" maxlength="200"></div>
+    <label class="check"><input type="checkbox" name="active" ${s.active !== false ? 'checked' : ''}> Ativo (disponível para marcação)</label>
+    ${s.id ? '<p class="muted small" style="margin:0">Alterar o preço não muda o valor das marcações já feitas.</p>' : ''}`,
+  async f => {
+    const r = await call('saveService', { service: { id: s.id, name: f.name.value, duration: +f.duration.value,
+      price: +f.price.value, description: f.description.value, active: f.active.checked } });
+    DATA.services = r.services;
+    toast('Serviço guardado.');
+    render();
+  });
+}
+
+/* =============================== FOLGAS =============================== */
+function renderBlocks(el) {
+  const pros = DATA.professionals.filter(p => p.active !== false);
+  const t = iso(today());
+  el.innerHTML = `<h2>Folgas e indisponibilidades</h2>
+    <section class="card"><h3>Adicionar folga</h3>
+      <form id="blkForm" class="stack" novalidate>
+        <div class="field"><span class="lbl">Profissionais</span><div class="checks">
+          <label class="check"><input type="checkbox" name="pros" value="*"> <b>Todos</b></label>
+          ${pros.map(p => `<label class="check"><input type="checkbox" name="pros" value="${esc(p.id)}"> ${esc(p.name)}</label>`).join('')}</div></div>
+        <div class="grid-auto">
+          <div class="field"><label>De</label><input type="date" name="from" value="${t}" required></div>
+          <div class="field"><label>Até</label><input type="date" name="to" value="${t}" required></div>
+          <div class="field"><label>Duração</label><select name="allDay"><option value="1">Dia inteiro</option><option value="0">Só algumas horas</option></select></div>
+          <div class="field" data-hrs hidden><label>Das</label><input type="time" name="start" value="12:00" step="300"></div>
+          <div class="field" data-hrs hidden><label>Às</label><input type="time" name="end" value="14:00" step="300"></div>
+        </div>
+        <div class="field"><label>Motivo (opcional)</label><input name="reason" maxlength="80" placeholder="Férias, consulta, formação…"></div>
+        <div><button class="btn primary" type="submit">Adicionar folga</button></div>
+      </form>
+      <p class="muted small" style="margin:12px 0 0">Também podes criar um evento diretamente no calendário do profissional: esse horário fica bloqueado na mesma.</p>
+    </section>
+    <section class="card"><h3>Próximas folgas (6 meses)</h3><div id="blkList"><div class="spinner"></div></div></section>
+    <section class="card"><h3>Estúdio fechado (feriados)</h3>
+      <p class="muted small" style="margin:-6px 0 12px">Nestes dias não se aceitam marcações para nenhum profissional.</p>
+      <div class="chips" id="closedChips" style="margin-bottom:12px"></div>
+      <form id="closedForm" class="inline"><input type="date" name="d" required><button class="btn" type="submit">Adicionar dia</button></form>
+    </section>`;
+
+  const f = $('#blkForm');
+  f.allDay.onchange = () => $$('[data-hrs]', f).forEach(x => (x.hidden = f.allDay.value === '1'));
+  f.from.onchange = () => { if (f.to.value < f.from.value) f.to.value = f.from.value; };
+  f.onchange = e => {
+    if (e.target.name !== 'pros') return;
+    const all = $('input[value="*"]', f);
+    if (e.target === all) $$('input[name=pros]', f).forEach(x => { if (x !== all) x.checked = false; });
+    else if (e.target.checked) all.checked = false;
+  };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const ids = $$('input[name=pros]:checked', f).map(x => x.value);
+    if (!ids.length) return toast('Escolhe pelo menos um profissional.', true);
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      const r = await call('addBlock', { pros: ids, from: f.from.value, to: f.to.value, allDay: f.allDay.value === '1',
+        start: f.start.value, end: f.end.value, reason: f.reason.value });
+      toast(`Folga adicionada (${r.created} evento${r.created === 1 ? '' : 's'} no calendário).`);
+      f.reason.value = '';
+      loadBlocks();
+    } catch (ex) { toast(ex.message, true); }
+    finally { btn.disabled = false; }
+  };
+
+  drawClosed();
+  $('#closedForm').onsubmit = async e => {
+    e.preventDefault();
+    const d = e.target.d.value; if (!d) return;
+    try { DATA.closedDates = (await call('saveClosed', { dates: [...DATA.closedDates, d] })).closedDates; drawClosed(); e.target.reset(); }
+    catch (ex) { toast(ex.message, true); }
+  };
+  $('#blkList').onclick = async e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    if (!confirm('Apagar esta folga?')) return;
+    b.disabled = true;
+    try { await call('deleteBlock', { pro: b.dataset.pro, id: b.dataset.del }); toast('Folga apagada.'); loadBlocks(); }
+    catch (ex) { toast(ex.message, true); b.disabled = false; }
+  };
+  loadBlocks();
+}
+
+function drawClosed() {
+  const box = $('#closedChips');
+  const list = [...DATA.closedDates].sort();
+  box.innerHTML = list.length ? list.map(d => `<span class="chip">${fmtDay(d)} ${d.slice(0, 4)}<button title="Remover" data-d="${d}">×</button></span>`).join('') : '<span class="muted small">Nenhum dia marcado.</span>';
+  $$('button[data-d]', box).forEach(b => (b.onclick = async () => {
+    try { DATA.closedDates = (await call('saveClosed', { dates: DATA.closedDates.filter(x => x !== b.dataset.d) })).closedDates; drawClosed(); }
+    catch (ex) { toast(ex.message, true); }
+  }));
+}
+
+async function loadBlocks() {
+  const box = $('#blkList');
+  try {
+    const t = today();
+    const { rows } = await call('listBlocks', { from: iso(t), to: iso(addDays(t, 183)) });
+    box.innerHTML = rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Quando</th><th>Profissional</th><th>Motivo</th><th></th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${fmtDay(r.date)}${r.endDate !== r.date ? ' → ' + fmtDay(r.endDate) : ''}<br>
+          <span class="muted small">${r.allDay ? 'Dia inteiro' : `${r.time}–${r.endTime}`}</span></td>
+        <td>${esc(r.proName)}</td><td>${esc(r.reason)}</td>
+        <td class="num">${r.managed ? `<button class="btn sm danger" data-del="${esc(r.id)}" data-pro="${esc(r.pro)}">Apagar</button>`
+          : '<span class="muted small">Criado no calendário</span>'}</td></tr>`).join('')}
+      </tbody></table></div>` : '<p class="empty">Sem folgas nos próximos meses.</p>';
+  } catch (e) { box.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+/* =============================== DEFINIÇÕES =============================== */
+function renderSettings(el) {
+  const s = DATA.settings;
+  el.innerHTML = `<h2>Definições</h2>
+    <section class="card"><h3>Estúdio</h3>
+      <form id="setForm" class="stack" novalidate>
+        <div class="grid2">
+          <div class="field"><label>Nome do estúdio</label><input name="studioName" value="${esc(s.studioName)}" maxlength="80"></div>
+          <div class="field"><label>Morada</label><input name="address" value="${esc(s.address)}" maxlength="160"></div>
+          <div class="field"><label>E-mail para notificações</label><input name="adminEmail" type="email" value="${esc(s.adminEmail)}" placeholder="${esc(DATA.adminEmail || '')}"></div>
+          <div class="field"><label>Link do site de marcações</label><input name="siteUrl" type="url" value="${esc(s.siteUrl)}" placeholder="https://utilizador.github.io/agenda/"></div>
+        </div>
+        <div class="grid-auto">
+          <div class="field"><label>Intervalo entre horários</label><select name="slotStep">${[5, 10, 15, 20, 30, 60].map(n => `<option value="${n}" ${+s.slotStep === n ? 'selected' : ''}>${n} min</option>`).join('')}</select></div>
+          <div class="field"><label>Antecedência mínima (h)</label><input name="minNoticeHours" type="number" min="0" max="720" value="${s.minNoticeHours}"></div>
+          <div class="field"><label>Marcar até (dias)</label><input name="maxDaysAhead" type="number" min="1" max="365" value="${s.maxDaysAhead}"></div>
+          <div class="field"><label>Moeda</label><select name="currency">${['EUR', 'BRL', 'USD', 'GBP'].map(c => `<option ${s.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+        </div>
+        <label class="check"><input type="checkbox" name="autoConfirm" ${s.autoConfirm ? 'checked' : ''}> Confirmar marcações online automaticamente (sem aprovação)</label>
+        <div><button class="btn primary" type="submit">Guardar definições</button></div>
+      </form>
+    </section>
+    <section class="card"><h3>Senha do painel</h3>
+      <form id="pwForm" class="grid-auto" novalidate>
+        <div class="field"><label>Senha atual</label><input name="current" type="password" autocomplete="current-password"></div>
+        <div class="field"><label>Nova senha</label><input name="next" type="password" minlength="8" autocomplete="new-password"></div>
+        <div class="field" style="align-self:end"><button class="btn" type="submit">Alterar senha</button></div>
+      </form>
+    </section>`;
+
+  $('#setForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button'); btn.disabled = true;
+    try {
+      const r = await call('saveSettings', { settings: {
+        studioName: f.studioName.value, address: f.address.value, adminEmail: f.adminEmail.value.trim(), siteUrl: f.siteUrl.value.trim(),
+        slotStep: +f.slotStep.value, minNoticeHours: +f.minNoticeHours.value, maxDaysAhead: +f.maxDaysAhead.value,
+        currency: f.currency.value, autoConfirm: f.autoConfirm.checked } });
+      DATA.settings = r.settings; applyHeader(); toast('Definições guardadas.');
+    } catch (ex) { toast(ex.message, true); }
+    finally { btn.disabled = false; }
+  };
+  $('#pwForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target;
+    if (f.next.value.length < 8) return toast('A nova senha precisa de pelo menos 8 caracteres.', true);
+    try {
+      const r = await call('changePassword', { current: f.current.value, next: f.next.value });
+      TOKEN = r.token; session.set('agenda_token', TOKEN); f.reset(); toast('Senha alterada.');
+    } catch (ex) { toast(ex.message, true); }
+  };
+}
+
+/* =============================== MODO DEMONSTRAÇÃO =============================== */
+/* Só é usado quando API_URL está vazio: simula o Apps Script com dados fictícios em memória. */
+const demo = (() => {
+  const settings = { studioName: 'Estúdio Exemplo', address: 'Rua Exemplo 123, Lisboa', adminEmail: '', currency: 'EUR',
+    slotStep: 15, minNoticeHours: 2, maxDaysAhead: 60, autoConfirm: false, siteUrl: '' };
+  const services = [
+    { id: 'manicure', name: 'Manicure', duration: 45, price: 15, description: 'Limpeza, cutículas e verniz.', active: true },
+    { id: 'gel', name: 'Unhas de gel', duration: 90, price: 35, description: 'Aplicação ou manutenção.', active: true },
+    { id: 'pedicure', name: 'Pedicure', duration: 60, price: 20, description: '', active: true },
+    { id: 'guitarra', name: 'Aula de guitarra', duration: 60, price: 25, description: 'Aula individual.', active: true },
+    { id: 'piano', name: 'Aula de piano', duration: 45, price: 22, description: '', active: true },
+  ];
+  const std = [['09:00', '13:00'], ['14:00', '19:00']];
+  const professionals = [
+    { id: 'ana', name: 'Ana Silva', role: 'Manicure', email: 'ana@exemplo.pt', sharedWith: 'ana@exemplo.pt', active: true,
+      services: ['manicure', 'gel', 'pedicure'], hours: { 2: std, 3: std, 4: std, 5: std, 6: [['09:00', '14:00']] } },
+    { id: 'marta', name: 'Marta Lopes', role: 'Manicure', email: '', active: true,
+      services: ['manicure', 'pedicure'], hours: { 1: std, 3: std, 5: std } },
+    { id: 'rui', name: 'Rui Costa', role: 'Professor de música', email: 'rui@exemplo.pt', sharedWith: 'rui@exemplo.pt', active: true,
+      services: ['guitarra', 'piano'], hours: { 1: [['15:00', '21:00']], 3: [['15:00', '21:00']], 5: [['15:00', '21:00']], 6: [['10:00', '13:00']] } },
+  ];
+  const y = new Date().getFullYear();
+  const closedDates = [`${y}-12-25`, `${y + 1}-01-01`];
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const toMin = s => +s.slice(0, 2) * 60 + +s.slice(3);
+  const names = ['Joana Martins', 'Pedro Santos', 'Inês Ferreira', 'Tiago Rocha', 'Beatriz Alves', 'Miguel Sousa', 'Carla Pinto',
+    'Rita Gomes', 'Hugo Neves', 'Sara Lima', 'André Costa', 'Marta Dias', 'Sofia Ramos', 'Luís Teixeira'];
+  const bookings = [], blocks = [];
+  const t0 = today();
+  for (let i = -150; i <= 30; i++) {
+    const day = addDays(t0, i);
+    professionals.forEach(p => {
+      const win = p.hours[day.getDay()]; if (!win) return;
+      const used = [];
+      const n = Math.floor(rnd() * (i > 7 ? 2 : 5));
+      for (let k = 0; k < n; k++) {
+        const sid = p.services[Math.floor(rnd() * p.services.length)];
+        const svc = services.find(s => s.id === sid);
+        const [a, b] = win[Math.floor(rnd() * win.length)];
+        const slots = Math.floor((toMin(b) - toMin(a) - svc.duration) / 15) + 1; if (slots < 1) continue;
+        const start = toMin(a) + Math.floor(rnd() * slots) * 15;
+        if (used.some(([s, e]) => start < e && start + svc.duration > s)) continue;
+        used.push([start, start + svc.duration]);
+        const name = names[Math.floor(rnd() * names.length)];
+        const status = i < 0 ? (rnd() < 0.07 ? 'noshow' : 'confirmed') : i === 0 ? 'confirmed' : (rnd() < 0.25 ? 'pending' : 'confirmed');
+        bookings.push({ id: 'b' + bookings.length, pro: p.id, service: svc.id, date: iso(day), startMin: start, dur: svc.duration,
+          price: svc.price, status, name, phone: '9' + String(10000000 + Math.floor(rnd() * 89999999)),
+          email: name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@mail.pt',
+          notes: '', source: rnd() < 0.3 ? 'studio' : 'online' });
+      }
+    });
+  }
+  blocks.push({ id: 'k1', pro: 'ana', date: iso(addDays(t0, 12)), endDate: iso(addDays(t0, 16)), allDay: true, time: '', endTime: '', reason: 'Férias', managed: true });
+  blocks.push({ id: 'k2', pro: 'rui', date: iso(addDays(t0, 5)), endDate: iso(addDays(t0, 5)), allDay: false, time: '15:00', endTime: '17:00', reason: 'Consulta', managed: true });
+  return { settings, services, professionals, closedDates, bookings, blocks, toMin };
+})();
+
+function demoRow(b) {
+  const p = demo.professionals.find(x => x.id === b.pro), s = demo.services.find(x => x.id === b.service);
+  const d = parseISO(b.date);
+  const start = new Date(d.getTime() + b.startMin * 6e4), end = new Date(start.getTime() + b.dur * 6e4);
+  const hm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+  return { id: b.id, pro: b.pro, proName: p?.name || b.pro, service: b.service, serviceName: s?.name || b.service,
+    name: b.name, email: b.email, phone: b.phone, notes: b.notes, date: b.date, time: hm(b.startMin), endTime: hm(b.startMin + b.dur),
+    start: start.getTime(), end: end.getTime(), price: b.price,
+    status: b.status === 'confirmed' && end < new Date() ? 'done' : b.status, source: b.source };
+}
+
+async function demoCall(op, p) {
+  await sleep(op === 'listBookings' ? 350 : 200);
+  const D = demo, clone = o => JSON.parse(JSON.stringify(o));
+  const upsert = (list, item) => { const i = list.findIndex(x => x.id === item.id); if (i > -1) list[i] = item; else list.push(item); };
+  const slug = (name, list) => { let b = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'item', id = b, n = 2; while (list.some(x => x.id === id)) id = b + '-' + n++; return id; };
+  switch (op) {
+    case 'login': return { token: 'demo' };
+    case 'changePassword': return { token: 'demo' };
+    case 'getAll': return clone({ settings: D.settings, services: D.services, professionals: D.professionals, closedDates: D.closedDates, adminEmail: 'estudio@gmail.com' });
+    case 'listBookings':
+      return { rows: D.bookings.filter(b => b.date >= p.from && b.date <= p.to && (!p.pro || b.pro === p.pro)).map(demoRow).sort((a, b) => a.start - b.start) };
+    case 'setStatus': {
+      const i = D.bookings.findIndex(b => b.id === p.id); if (i < 0) throw new Error('Marcação não encontrada.');
+      if (p.status === 'rejected' || p.status === 'cancelled') D.bookings.splice(i, 1); else D.bookings[i].status = p.status;
+      return { ok: true };
+    }
+    case 'slots': {
+      const pro = D.professionals.find(x => x.id === p.pro), svc = D.services.find(x => x.id === p.service);
+      if (D.closedDates.includes(p.date)) return { slots: [] };
+      const win = pro.hours[parseISO(p.date).getDay()] || [];
+      const busy = D.bookings.filter(b => b.pro === p.pro && b.date === p.date).map(b => [b.startMin, b.startMin + b.dur]);
+      D.blocks.filter(k => k.pro === p.pro && p.date >= k.date && p.date <= k.endDate)
+        .forEach(k => busy.push(k.allDay ? [0, 1440] : [D.toMin(k.time), D.toMin(k.endTime)]));
+      const out = [];
+      win.forEach(([a, b]) => { for (let t = D.toMin(a); t + svc.duration <= D.toMin(b); t += D.settings.slotStep)
+        if (!busy.some(([s, e]) => t < e && t + svc.duration > s)) out.push(`${pad(Math.floor(t / 60))}:${pad(t % 60)}`); });
+      return { slots: out };
+    }
+    case 'createBooking': {
+      const b = p.booking, svc = D.services.find(x => x.id === b.service);
+      D.bookings.push({ id: 'b' + Date.now(), pro: b.pro, service: b.service, date: b.date, startMin: D.toMin(b.time), dur: svc.duration,
+        price: svc.price, status: 'confirmed', name: b.name, phone: b.phone, email: b.email, notes: b.notes, source: 'studio' });
+      return { ok: true, status: 'confirmed' };
+    }
+    case 'saveService': {
+      const s = p.service; if (!s.name.trim()) throw new Error('O serviço precisa de um nome.');
+      upsert(D.services, { ...s, id: s.id || slug(s.name, D.services) });
+      return { services: clone(D.services) };
+    }
+    case 'savePro': {
+      const x = p.pro, old = D.professionals.find(o => o.id === x.id) || {};
+      const item = { ...old, ...x, id: x.id || slug(x.name, D.professionals) };
+      let info = '';
+      if (item.email && item.sharedWith !== item.email) { item.sharedWith = item.email; info = 'Calendário partilhado com ' + item.email + '.'; }
+      upsert(D.professionals, item);
+      return { professionals: clone(D.professionals), info };
+    }
+    case 'saveSettings': Object.assign(D.settings, p.settings); return { settings: clone(D.settings) };
+    case 'saveClosed': D.closedDates = [...new Set(p.dates)].sort(); return { closedDates: clone(D.closedDates) };
+    case 'listBlocks': {
+      const rows = D.blocks.filter(k => k.endDate >= p.from && k.date <= p.to)
+        .map(k => ({ ...k, proName: D.professionals.find(x => x.id === k.pro)?.name || k.pro })).sort((a, b) => a.date.localeCompare(b.date));
+      return { rows };
+    }
+    case 'addBlock': {
+      const ids = p.pros.includes('*') ? D.professionals.filter(x => x.active !== false).map(x => x.id) : p.pros;
+      if (!p.allDay && !(p.start < p.end)) throw new Error('A hora de fim tem de ser depois da hora de início.');
+      ids.forEach(id => D.blocks.push({ id: 'k' + Math.random().toString(36).slice(2), pro: id, date: p.from, endDate: p.to, allDay: p.allDay,
+        time: p.allDay ? '' : p.start, endTime: p.allDay ? '' : p.end, reason: p.reason || 'Indisponível', managed: true }));
+      return { created: ids.length };
+    }
+    case 'deleteBlock': D.blocks = D.blocks.filter(k => k.id !== p.id); return { ok: true };
+    default: throw new Error('Operação desconhecida: ' + op);
+  }
+}
+
+/* =============================== INÍCIO =============================== */
+(async () => {
+  $('#demoBanner').hidden = !DEMO_MODE;
+  if (DEMO_MODE) { TOKEN = 'demo'; return loadAll(); }
+  if (!TOKEN) return showLogin();
+  try { await loadAll(); } catch (e) { showLogin(e.message); }
+})();
+</script>
+</body>
+</html>
