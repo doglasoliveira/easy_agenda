@@ -441,7 +441,10 @@ async function call(op, params = {}) {
       body: JSON.stringify({ action: 'admin', op, token: TOKEN, ...params }),
     });
     const j = await r.json();
-    if (j.error) { if (j.auth) logout(j.error); throw new Error(j.error); }
+    if (j.error) {
+      if (j.auth && op !== 'status') logout(j.error);
+      const err = new Error(j.error); err.auth = !!j.auth; throw err;
+    }
     return j;
   } catch (ex) {
     if (ex instanceof TypeError) throw new Error('Sem ligação ao servidor. Verifica a internet e tenta de novo.');
@@ -507,6 +510,13 @@ function renderAuth() {
       `${pwField('aPw', 'Senha', 'new-password')}<p class="muted small" style="margin:-6px 0 0;text-align:left">Pelo menos 8 caracteres.</p>`,
       'Criar senha e entrar', `<button type="button" data-go="login">Já tenho senha</button>`],
     loading: ['⏳', 'Um momento…', '', '<div class="dots"><i></i><i></i><i></i></div>', '', ''],
+    outdated: ['🛠️', 'Falta atualizar o servidor', 'O painel já está na versão nova, mas o teu Apps Script ainda tem o código antigo. São 2 minutos:',
+      `<ol style="text-align:left;margin:0;padding-left:20px;line-height:1.6;font-weight:700">
+         <li>Abre o <a href="https://raw.githubusercontent.com/doglasoliveira/easy_agenda/main/apps-script/Code.gs" target="_blank" rel="noopener">código novo (Code.gs)</a> e copia tudo (Ctrl+A, Ctrl+C).</li>
+         <li>Em <b>script.google.com</b>, abre o projeto, apaga o código antigo, cola o novo e guarda (💾).</li>
+         <li>Vai a <b>Implementar → Gerir implementações</b>, clica no lápis ✏️, escolhe <b>Versão: Nova versão</b> e <b>Implementar</b>.</li>
+       </ol>`,
+      'Já atualizei, tentar de novo', ''],
   }[m];
   $('#authTitle').innerHTML = `${esc(V[1])} <span class="hello">${V[0]}</span>`;
   $('#authSub').innerHTML = V[2]; $('#authSub').hidden = !V[2];
@@ -534,6 +544,7 @@ $('#authForm').onsubmit = async e => {
   e.preventDefault();
   const btn = $('#authBtn'); const label = btn.textContent;
   const val = id => ($('#' + id)?.value || '').trim();
+  if (AUTH.mode === 'outdated') return startAuth();
   try {
     if (['setup', 'forgot', 'login'].includes(AUTH.mode)) {
       AUTH.email = val('aEmail').toLowerCase();
@@ -571,9 +582,14 @@ async function startAuth() {
   AUTH.mode = 'loading'; showLogin();
   try {
     const st = await call('status');
+    if (typeof st.needsSetup !== 'boolean') throw Object.assign(new Error('versão antiga'), { auth: true });
     AUTH.setup = st.needsSetup; AUTH.hint = st.ownerHint || '';
     AUTH.mode = st.needsSetup ? 'setup' : 'login';
-  } catch (ex) { AUTH.mode = 'login'; toast(ex.message, true); }
+  } catch (ex) {
+    // O Apps Script antigo não conhece o pedido "status" e responde a pedir sessão: é preciso atualizar o Code.gs
+    if (ex.auth) AUTH.mode = 'outdated';
+    else { AUTH.mode = 'login'; toast(ex.message, true); }
+  }
   renderAuth();
 }
 $('#logout').onclick = () => logout();
