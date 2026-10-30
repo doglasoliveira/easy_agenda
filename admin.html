@@ -1076,7 +1076,7 @@ function openProDialog(p = { services: [], hours: {}, active: true }) {
       <div class="field"><label>Função</label><input name="role" value="${esc(p.role || '')}" placeholder="Manicure, professor de piano…" maxlength="60"></div>
     </div>
     <div class="field"><label>E-mail (Google ou iCloud)</label><input name="email" type="email" value="${esc(p.email || '')}" maxlength="120">
-      <span class="muted small">Opcional. O calendário do profissional é partilhado com este e-mail para ele ver a agenda no telemóvel.</span></div>
+      <span class="muted small">Opcional. Serve para partilhar o calendário com ele (vê a agenda no telemóvel) e, se escolheres nas Definições, para ele aprovar os seus pedidos por e-mail.</span></div>
     <div class="field"><span class="lbl">Serviços que faz</span><div class="checks">
       ${DATA.services.filter(s => !s.deleted && (s.active !== false || p.services.includes(s.id))).map(s => `<label class="check"><input type="checkbox" name="svc" value="${esc(s.id)}" ${p.services.includes(s.id) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">Cria primeiro os serviços.</span>'}
     </div></div>
@@ -1281,6 +1281,11 @@ function renderSettings(el) {
           </div>
           <span class="muted small">"Sistema" segue o modo claro/escuro do telemóvel ou computador de cada pessoa.</span></div>
         <label class="check"><input type="checkbox" name="autoConfirm" ${s.autoConfirm ? 'checked' : ''}> Confirmar marcações online automaticamente (sem aprovação)</label>
+        <div class="field" id="approvalsField"><span class="lbl">Quem aprova os pedidos online</span>
+          <div class="seg" role="radiogroup" aria-label="Quem aprova">
+            ${[['studio', '🏠 O estúdio'], ['pro', '🙋 O profissional'], ['both', '🤝 Ambos']].map(([v, l]) => `<label><input type="radio" name="approvals" value="${v}" ${(s.approvals || 'studio') === v ? 'checked' : ''}> ${l}</label>`).join('')}
+          </div>
+          <span class="muted small" id="approvalsHelp"></span></div>
         <div><button class="btn primary" type="submit">Guardar definições</button></div>
       </form>
     </section>
@@ -1312,6 +1317,21 @@ function renderSettings(el) {
     </section>`;
 
   $$('#setForm input[name=theme]').forEach(r => (r.onchange = () => applyTheme(r.value)));
+  const apHelp = () => {
+    const f = $('#setForm'), v = f.approvals.value;
+    const noEmail = DATA.professionals.filter(p => !p.deleted && p.active !== false && !p.email).map(p => p.name);
+    $('#approvalsField').style.opacity = f.autoConfirm.checked ? .5 : 1;
+    $('#approvalsHelp').textContent = f.autoConfirm.checked
+      ? 'Com a confirmação automática ligada, ninguém precisa de aprovar: estes e-mails servem só de aviso.'
+      : {
+          studio: 'O e-mail com os botões Aprovar / Recusar vai para o e-mail de notificações do estúdio.',
+          pro: 'Cada pedido vai para o e-mail do próprio profissional, com os botões Aprovar / Recusar. Não precisa de entrar no painel.',
+          both: 'O e-mail vai para o estúdio e para o profissional. Quem carregar primeiro decide.',
+        }[v] + (v !== 'studio' && noEmail.length ? ` ⚠️ Sem e-mail (os pedidos vão para o estúdio): ${noEmail.join(', ')}.` : '');
+  };
+  $$('#setForm input[name=approvals]').forEach(r => (r.onchange = apHelp));
+  $('#setForm').autoConfirm.addEventListener('change', apHelp);
+  apHelp();
   $('#setForm').onsubmit = async e => {
     e.preventDefault();
     const f = e.target, btn = f.querySelector('button'); btn.disabled = true;
@@ -1319,7 +1339,7 @@ function renderSettings(el) {
       const r = await call('saveSettings', { settings: {
         studioName: f.studioName.value, address: f.address.value, adminEmail: f.adminEmail.value.trim(), siteUrl: f.siteUrl.value.trim(),
         slotStep: +f.slotStep.value, minNoticeHours: +f.minNoticeHours.value, maxDaysAhead: +f.maxDaysAhead.value,
-        currency: f.currency.value, theme: f.theme.value, autoConfirm: f.autoConfirm.checked } });
+        currency: f.currency.value, theme: f.theme.value, autoConfirm: f.autoConfirm.checked, approvals: f.approvals.value } });
       DATA.settings = r.settings; applyHeader(); toast('Definições guardadas.');
     } catch (ex) { toast(ex.message, true); }
     finally { btn.disabled = false; }
@@ -1399,7 +1419,7 @@ function drawUsers(users) {
 /* Só é usado quando API_URL está vazio: simula o Apps Script com dados fictícios em memória. */
 const demo = (() => {
   const settings = { studioName: 'Estúdio Exemplo', address: 'Rua Exemplo 123, Lisboa', adminEmail: '', currency: 'EUR',
-    slotStep: 15, minNoticeHours: 2, maxDaysAhead: 60, autoConfirm: false, siteUrl: '', theme: 'system' };
+    slotStep: 15, minNoticeHours: 2, maxDaysAhead: 60, autoConfirm: false, siteUrl: '', theme: 'system', approvals: 'studio' };
   const services = [
     { id: 'manicure', name: 'Manicure', duration: 45, price: 15, description: 'Limpeza, cutículas e verniz.', active: true },
     { id: 'gel', name: 'Unhas de gel', duration: 90, price: 35, description: 'Aplicação ou manutenção.', active: true },

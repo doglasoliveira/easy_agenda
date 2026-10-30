@@ -21,6 +21,7 @@ const DEFAULTS = {
     minNoticeHours: 2,       // antecedência mínima para marcações online
     maxDaysAhead: 60,        // até quantos dias à frente se pode marcar
     autoConfirm: false,      // true = marcações online confirmadas sem aprovação
+    approvals: 'studio',     // quem recebe os pedidos para aprovar: 'studio' | 'pro' | 'both'
     siteUrl: '',             // link do site de marcações (para aparecer no painel)
     theme: 'system',         // 'system' | 'light' | 'dark'
   },
@@ -244,6 +245,7 @@ function saveSettings_(s) {
     minNoticeHours: clampInt_(s.minNoticeHours, 0, 720, cur.minNoticeHours),
     maxDaysAhead: clampInt_(s.maxDaysAhead, 1, 365, cur.maxDaysAhead),
     autoConfirm: !!s.autoConfirm,
+    approvals: ['studio', 'pro', 'both'].indexOf(s.approvals) > -1 ? s.approvals : 'studio',
     siteUrl: clean_(s.siteUrl, 200),
     theme: ['system', 'light', 'dark'].indexOf(s.theme) > -1 ? s.theme : 'system',
   };
@@ -371,16 +373,21 @@ function book_(d, admin) {
     ev.setColor(colorFor_(status));
 
     const when = fmtWhen_(start);
+    const details = '<br><br>Cliente: <b>' + esc_(name) + '</b><br>E-mail: ' + esc_(email || '—') + '<br>Telefone: ' + esc_(phone || '—') +
+      '<br>Notas: ' + esc_(notes || '—');
     if (status === 'pending') {
-      MailApp.sendEmail({
-        to: adminEmail_(), replyTo: email,
-        subject: 'Novo pedido: ' + svc.name + ' com ' + pro.name + ' — ' + when,
-        htmlBody: mail_('Novo pedido de marcação',
-          '<b>' + esc_(name) + '</b> pediu <b>' + esc_(svc.name) + '</b> com ' + esc_(pro.name) + '<br>' + esc_(when) +
-          '<br><br>E-mail: ' + esc_(email) + '<br>Telefone: ' + esc_(phone || '—') + '<br>Notas: ' + esc_(notes || '—') +
-          '<br><br>' + btn_(actionUrl_('approve', pro.id, ev.getId()), 'Aprovar', '#1a7f4b') + ' &nbsp; ' +
-          btn_(actionUrl_('reject', pro.id, ev.getId()), 'Recusar', '#b42318') +
-          '<br><br><small>Também podes aprovar no painel do estúdio.</small>'),
+      const buttons = '<br><br>' + btn_(actionUrl_('approve', pro.id, ev.getId()), '✅ Aprovar', '#1a7f4b') + ' &nbsp; ' +
+        btn_(actionUrl_('reject', pro.id, ev.getId()), 'Recusar', '#b42318');
+      approvers_(pro).forEach(r => {
+        MailApp.sendEmail({
+          to: r.email, replyTo: email, name: st.studioName,
+          subject: 'Novo pedido: ' + svc.name + (r.isPro ? '' : ' com ' + pro.name) + ' — ' + when,
+          htmlBody: mail_('Novo pedido de marcação',
+            (r.isPro ? 'Olá ' + esc_(pro.name.split(' ')[0]) + ', tens um pedido novo:<br><br>' : '') +
+            '<b>' + esc_(svc.name) + '</b>' + (r.isPro ? '' : ' com ' + esc_(pro.name)) + '<br>' + esc_(when) + details + buttons +
+            '<br><br><small>' + (r.shared ? 'Basta uma pessoa responder: quem carregar primeiro decide. ' : '') +
+            (r.isPro ? 'Não precisas de entrar no painel.' : 'Também podes aprovar no painel do estúdio.') + '</small>'),
+        });
       });
       MailApp.sendEmail({
         to: email, name: st.studioName,
@@ -392,12 +399,13 @@ function book_(d, admin) {
     } else {
       if (email) sendConfirmation_(ev, pro);
       if (!admin) {
-        MailApp.sendEmail({
-          to: adminEmail_(), replyTo: email,
-          subject: 'Nova marcação: ' + svc.name + ' com ' + pro.name + ' — ' + when,
-          htmlBody: mail_('Nova marcação confirmada',
-            '<b>' + esc_(name) + '</b> marcou <b>' + esc_(svc.name) + '</b> com ' + esc_(pro.name) + '<br>' + esc_(when) +
-            '<br><br>E-mail: ' + esc_(email) + '<br>Telefone: ' + esc_(phone || '—') + '<br>Notas: ' + esc_(notes || '—')),
+        approvers_(pro).forEach(r => {
+          MailApp.sendEmail({
+            to: r.email, replyTo: email, name: st.studioName,
+            subject: 'Nova marcação: ' + svc.name + (r.isPro ? '' : ' com ' + pro.name) + ' — ' + when,
+            htmlBody: mail_('Nova marcação confirmada',
+              '<b>' + esc_(svc.name) + '</b>' + (r.isPro ? '' : ' com ' + esc_(pro.name)) + '<br>' + esc_(when) + details),
+          });
         });
       }
     }
@@ -405,6 +413,19 @@ function book_(d, admin) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Quem recebe os pedidos para aprovar, conforme a definição "approvals".
+ *  Se o profissional não tiver e-mail, o pedido vai sempre para o estúdio. */
+function approvers_(pro) {
+  const mode = settings_().approvals || 'studio';
+  const studio = normEmail_(adminEmail_());
+  const proEmail = normEmail_(pro.email);
+  const list = [];
+  if (mode !== 'pro' || !proEmail) list.push({ email: studio, isPro: false });
+  if (mode !== 'studio' && proEmail && proEmail !== studio) list.push({ email: proEmail, isPro: true });
+  list.forEach(r => { r.shared = list.length > 1; });
+  return list;
 }
 
 function approve_(ev, pro) {

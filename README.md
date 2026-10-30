@@ -51,6 +51,15 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 3. **Profissionais:** cria cada profissional com os serviços e o horário. O formato do horário é `09:00-13:00, 14:00-19:00`, e dias em branco contam como folga.
 4. **Folgas / feriados:** marca as férias e os dias de estúdio fechado.
 
+## Quem aprova os pedidos
+
+Em **Definições → Quem aprova os pedidos online** escolhes para onde vai o e-mail com os botões **✅ Aprovar / Recusar**:
+- **🏠 O estúdio:** vai para o e-mail de notificações do estúdio (como antes).
+- **🙋 O profissional:** cada pedido vai para o e-mail do próprio profissional. Ele aprova num toque, **sem precisar de entrar no painel**.
+- **🤝 Ambos:** vai para os dois, e quem carregar primeiro decide. O outro, se clicar depois, vê "Já tratado".
+
+O e-mail do profissional define-se em **Profissionais → Editar**. Se o profissional não tiver e-mail, os pedidos dele vão para o estúdio. Com a confirmação automática ligada, estes e-mails servem só de aviso.
+
 ## Alertas de novos pedidos
 
 Com o painel aberto, o Easy Agenda verifica novos pedidos **a cada minuto**. Quando chega um:
