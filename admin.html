@@ -439,9 +439,9 @@ function renderReports(el) {
         <div class="field" data-custom><label for="fFrom">De</label><input type="date" id="fFrom" value="${R.from}"></div>
         <div class="field" data-custom><label for="fTo">Até</label><input type="date" id="fTo" value="${R.to}"></div>
         <div class="field"><label for="fPro">Profissional</label><select id="fPro">${opt('', 'Todos', R.pro)}
-          ${DATA.professionals.map(p => opt(p.id, p.name + (p.active === false ? ' (inativo)' : ''), R.pro)).join('')}</select></div>
+          ${DATA.professionals.map(p => opt(p.id, p.name + (p.deleted ? ' (apagado)' : p.active === false ? ' (inativo)' : ''), R.pro)).join('')}</select></div>
         <div class="field"><label for="fSvc">Serviço</label><select id="fSvc">${opt('', 'Todos', R.service)}
-          ${DATA.services.map(s => opt(s.id, s.name + (s.active === false ? ' (inativo)' : ''), R.service)).join('')}</select></div>
+          ${DATA.services.map(s => opt(s.id, s.name + (s.deleted ? ' (apagado)' : s.active === false ? ' (inativo)' : ''), R.service)).join('')}</select></div>
         <div class="field"><label for="fStatus">Estado (tabela)</label><select id="fStatus">${opt('', 'Todos', R.status)}
           ${Object.entries(STATUS).map(([k, l]) => opt(k, l, R.status)).join('')}</select></div>
       </div>
@@ -710,7 +710,7 @@ function parseHours(txt, day) {
 }
 
 function renderPros(el) {
-  const list = [...DATA.professionals].sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
+  const list = DATA.professionals.filter(p => !p.deleted).sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
   el.innerHTML = `<div class="row-between"><h2>Profissionais</h2><button class="btn primary" id="addPro">+ Novo profissional</button></div>
     ${list.length ? `<div class="cards">${list.map(p => {
       const hrs = ORDER.filter(d => (p.hours?.[d] || []).length);
@@ -728,7 +728,7 @@ function renderPros(el) {
 }
 
 function openProDialog(p = { services: [], hours: {}, active: true }) {
-  openDialog(`<h3>${p.id ? 'Editar profissional' : 'Novo profissional'}</h3>
+  const form = openDialog(`<h3>${p.id ? 'Editar profissional' : 'Novo profissional'}</h3>
     <div class="grid2">
       <div class="field"><label>Nome</label><input name="name" value="${esc(p.name || '')}" required maxlength="60"></div>
       <div class="field"><label>Função</label><input name="role" value="${esc(p.role || '')}" placeholder="Manicure, professor de piano…" maxlength="60"></div>
@@ -736,7 +736,7 @@ function openProDialog(p = { services: [], hours: {}, active: true }) {
     <div class="field"><label>E-mail (Google ou iCloud)</label><input name="email" type="email" value="${esc(p.email || '')}" maxlength="120">
       <span class="muted small">Opcional. O calendário do profissional é partilhado com este e-mail para ele ver a agenda no telemóvel.</span></div>
     <div class="field"><span class="lbl">Serviços que faz</span><div class="checks">
-      ${DATA.services.filter(s => s.active !== false || p.services.includes(s.id)).map(s => `<label class="check"><input type="checkbox" name="svc" value="${esc(s.id)}" ${p.services.includes(s.id) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">Cria primeiro os serviços.</span>'}
+      ${DATA.services.filter(s => !s.deleted && (s.active !== false || p.services.includes(s.id))).map(s => `<label class="check"><input type="checkbox" name="svc" value="${esc(s.id)}" ${p.services.includes(s.id) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('') || '<span class="muted small">Cria primeiro os serviços.</span>'}
     </div></div>
     <div class="field"><span class="lbl">Horário semanal</span>
       <div class="hours-edit">${ORDER.map(d => `<div class="hr"><span>${WD[d]}</span><input name="h${d}" value="${esc(hoursText(p.hours?.[d]))}" placeholder="folga · ex.: 09:00-13:00, 14:00-19:00"></div>`).join('')}</div>
@@ -752,12 +752,22 @@ function openProDialog(p = { services: [], hours: {}, active: true }) {
     DATA.professionals = r.professionals;
     toast(r.info || 'Profissional guardado.');
     render();
-  });
+  }, { extraLeft: `${p.id ? '<button type="button" class="btn danger" id="dlgDelete">🗑️ Apagar</button>' : ''}` });
+  const del = $('#dlgDelete', form);
+  if (del) del.onclick = async () => {
+    if (!confirm(`Apagar ${p.name}?\n\nDeixa de aparecer no painel e no site. As marcações passadas continuam nos relatórios e o calendário dele no Google não é apagado.`)) return;
+    del.disabled = true;
+    try {
+      const r = await call('deletePro', { id: p.id });
+      DATA.professionals = r.professionals;
+      $('#dlg').close(); toast('Profissional apagado.'); render();
+    } catch (ex) { const e = $('#dlgErr'); e.textContent = ex.message; e.hidden = false; del.disabled = false; }
+  };
 }
 
 /* =============================== SERVIÇOS =============================== */
 function renderServices(el) {
-  const list = [...DATA.services].sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
+  const list = DATA.services.filter(s => !s.deleted).sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name));
   el.innerHTML = `<div class="row-between"><h2>Serviços</h2><button class="btn primary" id="addSvc">+ Novo serviço</button></div>
     <section class="card">${list.length ? `<div class="table-wrap"><table>
       <thead><tr><th>Serviço</th><th class="num">Duração</th><th class="num">Preço</th><th>Profissionais</th><th></th></tr></thead>
@@ -791,7 +801,17 @@ function openSvcDialog(s = { duration: 60, price: 0, active: true }) {
     DATA.services = r.services;
     toast('Serviço guardado.');
     render();
-  });
+  }, { extraLeft: `${s.id ? '<button type="button" class="btn danger" id="dlgDelete">🗑️ Apagar</button>' : ''}` });
+  const del = $('#dlgDelete', form);
+  if (del) del.onclick = async () => {
+    if (!confirm(`Apagar o serviço "${s.name}"?\n\nÉ retirado de todos os profissionais e do site. As marcações passadas continuam nos relatórios.`)) return;
+    del.disabled = true;
+    try {
+      const r = await call('deleteService', { id: s.id });
+      DATA.services = r.services; DATA.professionals = r.professionals;
+      $('#dlg').close(); toast('Serviço apagado.'); render();
+    } catch (ex) { const e = $('#dlgErr'); e.textContent = ex.message; e.hidden = false; del.disabled = false; }
+  };
   $$('.emoji-pick button', form).forEach(btn => (btn.onclick = () => {
     $$('.emoji-pick button', form).forEach(x => x.classList.toggle('on', x === btn));
     form.icon.value = btn.dataset.e;
@@ -1085,6 +1105,16 @@ async function demoCall(op, p) {
       return { created: ids.length };
     }
     case 'deleteBlock': D.blocks = D.blocks.filter(k => k.id !== p.id); return { ok: true };
+    case 'deletePro': case 'deleteService': {
+      const isPro = op === 'deletePro', list = isPro ? D.professionals : D.services, item = list.find(x => x.id === p.id);
+      const ti = iso(today());
+      const n = D.bookings.filter(b => b.date >= ti && (b.status === 'pending' || b.status === 'confirmed') && (isPro ? b.pro : b.service) === p.id).length;
+      if (n) throw new Error((isPro ? item.name + ' ainda tem ' : 'Há ') + n + (n === 1 ? ' marcação futura' : ' marcações futuras') +
+        (isPro ? '' : ' de "' + item.name + '"') + '. Cancela-as primeiro em Marcações ou, em alternativa, desativa ' + (isPro ? 'o profissional.' : 'o serviço.'));
+      item.deleted = true; item.active = false;
+      if (!isPro) D.professionals.forEach(x => { x.services = x.services.filter(id => id !== p.id); });
+      return isPro ? { professionals: clone(D.professionals) } : { services: clone(D.services), professionals: clone(D.professionals) };
+    }
     default: throw new Error('Operação desconhecida: ' + op);
   }
 }

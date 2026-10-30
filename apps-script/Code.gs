@@ -109,9 +109,9 @@ function admin_(d) {
     switch (d.op) {
       case 'getAll':         return getAll_();
       case 'saveService':    return saveService_(d.service);
-      case 'deleteService':  return setActive_('services', d.id, false);
+      case 'deleteService':  return deleteService_(d.id);
       case 'savePro':        return savePro_(d.pro);
-      case 'deletePro':      return setActive_('professionals', d.id, false);
+      case 'deletePro':      return deletePro_(d.id);
       case 'saveSettings':   return saveSettings_(d.settings);
       case 'saveClosed':     return saveClosed_(d.dates);
       case 'listBookings':   return listBookings_(d);
@@ -158,7 +158,7 @@ function savePro_(p) {
   if (!name) throw new Error('O profissional precisa de um nome.');
   const email = clean_(p.email, 120).toLowerCase();
   if (email && !EMAIL_RE.test(email)) throw new Error('E-mail do profissional inválido.');
-  const svcIds = services_().map(s => s.id);
+  const svcIds = services_().filter(s => !s.deleted).map(s => s.id);
 
   const list = pros_();
   const id = p.id || uniqueId_(name, list);
@@ -180,14 +180,50 @@ function savePro_(p) {
   return { professionals: list, info };
 }
 
-function setActive_(key, id, active) {
-  const list = key === 'services' ? services_() : pros_();
+/* Apagar: o registo fica marcado como apagado (deixa de aparecer no painel e no site),
+   mas as marcações passadas continuam nos relatórios. Só é permitido sem marcações futuras. */
+function deletePro_(id) {
+  const list = pros_();
   const item = list.filter(x => x.id === id)[0];
-  if (!item) throw new Error('Não encontrado.');
-  item.active = active;
-  setStore_(key, list);
-  const out = {}; out[key] = list;
-  return out;
+  if (!item) throw new Error('Profissional não encontrado.');
+  const n = futureBookings_([item]);
+  if (n) throw new Error(item.name + ' ainda tem ' + n + (n === 1 ? ' marcação futura' : ' marcações futuras') +
+    '. Cancela-as primeiro em Marcações ou, em alternativa, desativa o profissional.');
+  item.deleted = true;
+  item.active = false;
+  setStore_('professionals', list);
+  return { professionals: list };
+}
+
+function deleteService_(id) {
+  const list = services_();
+  const item = list.filter(x => x.id === id)[0];
+  if (!item) throw new Error('Serviço não encontrado.');
+  const n = futureBookings_(pros_(), id);
+  if (n) throw new Error('Há ' + n + (n === 1 ? ' marcação futura' : ' marcações futuras') + ' de "' + item.name +
+    '". Cancela-as primeiro em Marcações ou, em alternativa, desativa o serviço.');
+  item.deleted = true;
+  item.active = false;
+  setStore_('services', list);
+  const pros = pros_();
+  pros.forEach(p => { p.services = (p.services || []).filter(x => x !== id); });
+  setStore_('professionals', pros);
+  return { services: list, professionals: pros };
+}
+
+function futureBookings_(pros, serviceId) {
+  const now = new Date();
+  const until = new Date(now.getTime() + 400 * 86400e3);
+  let n = 0;
+  pros.forEach(pro => {
+    const cal = pro.calendarId && CalendarApp.getCalendarById(pro.calendarId);
+    if (!cal) return;
+    cal.getEvents(now, until).forEach(ev => {
+      const st = ev.getTag('status');
+      if ((st === 'pending' || st === 'confirmed') && (!serviceId || ev.getTag('service') === serviceId)) n++;
+    });
+  });
+  return n;
 }
 
 function saveSettings_(s) {
