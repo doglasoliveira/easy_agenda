@@ -133,6 +133,8 @@
   .btn.ok { background: var(--ok); color: #fff; box-shadow: 0 4px 0 #0a7254; }
   .btn.ok:active { box-shadow: 0 1px 0 #0a7254; }
   .btn.danger { color: var(--err); }
+  .btn.primary.danger-solid { background: var(--err); box-shadow: 0 4px 0 #a8262a; }
+  .btn.primary.danger-solid:active { box-shadow: 0 1px 0 #a8262a; }
   .btn.sm { padding: 6px 12px; font-size: 13px; border-radius: 12px; }
   .btn:disabled { opacity: .6; cursor: wait; }
   .err { color: var(--err); font-size: 14px; font-weight: 800; }
@@ -955,7 +957,7 @@ async function loadBookings() {
 }
 
 function bkItem(r) {
-  const a = (act, label, cls = '') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(r.id)}" data-pro="${esc(r.pro)}" data-name="${esc(r.name)}">${label}</button>`;
+  const a = (act, label, cls = '') => `<button class="btn sm ${cls}" data-act="${act}" data-id="${esc(r.id)}" data-pro="${esc(r.pro)}" data-name="${esc(r.name)}" data-email="${esc(r.email || '')}">${label}</button>`;
   const acts = {
     pending: a('approve', 'Aprovar', 'ok') + a('reject', 'Recusar', 'danger'),
     confirmed: a('cancel', 'Cancelar', 'danger'),
@@ -976,8 +978,7 @@ async function onBookingAction(e) {
   if (!b) return;
   const { act, id, pro, name } = b.dataset;
   const status = { approve: 'confirmed', reject: 'rejected', cancel: 'cancelled', noshow: 'noshow', undo: 'confirmed' }[act];
-  if (act === 'reject' && !(await ask(`Recusar o pedido de ${name}?`, 'O cliente é avisado por e-mail e o horário fica livre.', { icon: '🙅', ok: 'Recusar', danger: true }))) return;
-  if (act === 'cancel' && !(await ask(`Cancelar a marcação de ${name}?`, 'O cliente é avisado por e-mail e o horário fica livre.', { icon: '🗓️', ok: 'Cancelar marcação', cancel: 'Voltar', danger: true }))) return;
+  if (act === 'reject' || act === 'cancel') return openReplyDialog(act, { id, pro, name, email: b.dataset.email });
   b.disabled = true;
   try {
     await call('setStatus', { pro, id, status });
@@ -986,6 +987,33 @@ async function onBookingAction(e) {
     R.key = '';
     loadBookings();
   } catch (ex) { toast(ex.message, true); b.disabled = false; }
+}
+
+/* Recusar / cancelar com mensagem opcional para o cliente */
+const REPLY_IDEAS = {
+  reject: ['Nesse horário não tenho disponibilidade. Podes escolher outro dia?',
+           'Nesse dia não vou estar no estúdio. Tens disponibilidade noutro dia da semana?',
+           'Para este serviço preciso de mais tempo. Liga-nos para combinarmos.'],
+  cancel: ['Tive um imprevisto e não vou conseguir atender-te nesse dia. Peço desculpa!',
+           'O estúdio vai estar fechado nesse dia. Podes escolher outro horário?',
+           'Por motivo de doença tenho de cancelar. Assim que possível, marcamos de novo.'],
+};
+function openReplyDialog(act, { id, pro, name, email }) {
+  const isReject = act === 'reject', first = String(name).split(' ')[0];
+  const form = openDialog(`<h3>${isReject ? '🙅 Recusar o pedido' : '🗓️ Cancelar a marcação'} de ${esc(name)}</h3>
+    <p class="muted" style="margin:-4px 0 0">${email ? `${esc(first)} recebe um e-mail a avisar e o horário fica livre.` : `Este cliente não deixou e-mail: o horário fica livre, mas avisa-o por telefone.`}</p>
+    ${email ? `<div class="field"><label for="replyMsg">Mensagem para ${esc(first)} (opcional)</label>
+      <textarea id="replyMsg" name="msg" rows="4" maxlength="600" placeholder="Ex.: Nesse dia não consigo, mas tenho sexta às 15h."></textarea></div>
+    <div class="chips">${REPLY_IDEAS[act].map(t => `<button type="button" class="chip" style="border:0;cursor:pointer;text-align:left" data-idea>${esc(t)}</button>`).join('')}</div>
+    <p class="muted small" style="margin:0">Se ${esc(first)} responder ao e-mail, a resposta chega ao e-mail do estúdio.</p>` : ''}`,
+  async f => {
+    await call('setStatus', { pro, id, status: isReject ? 'rejected' : 'cancelled', message: f.msg ? f.msg.value.trim() : '' });
+    toast(isReject ? 'Pedido recusado.' : 'Marcação cancelada.');
+    R.key = '';
+    loadBookings();
+  }, { saveLabel: isReject ? 'Recusar e avisar' : 'Cancelar marcação' });
+  form.querySelector('button[type=submit]').classList.add('danger-solid');
+  $$('[data-idea]', form).forEach(c => (c.onclick = () => { form.msg.value = c.textContent; form.msg.focus(); }));
 }
 
 function openBookingDialog() {

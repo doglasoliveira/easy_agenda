@@ -318,10 +318,10 @@ function setStatus_(d) {
       break;
     case 'rejected':
       if (cur !== 'pending') throw new Error('Só é possível recusar pedidos pendentes.');
-      reject_(ev, pro);
+      reject_(ev, pro, d.message, false);
       break;
     case 'cancelled':
-      cancel_(ev, pro, d.notify !== false);
+      cancel_(ev, pro, d.notify !== false, d.message, false);
       break;
     case 'noshow':
       if (ev.getEndTime() > new Date()) throw new Error('Só é possível marcar falta depois da hora da marcação.');
@@ -376,9 +376,9 @@ function book_(d, admin) {
     const details = '<br><br>Cliente: <b>' + esc_(name) + '</b><br>E-mail: ' + esc_(email || '—') + '<br>Telefone: ' + esc_(phone || '—') +
       '<br>Notas: ' + esc_(notes || '—');
     if (status === 'pending') {
-      const buttons = '<br><br>' + btn_(actionUrl_('approve', pro.id, ev.getId()), '✅ Aprovar', '#1a7f4b') + ' &nbsp; ' +
-        btn_(actionUrl_('reject', pro.id, ev.getId()), 'Recusar', '#b42318');
       approvers_(pro).forEach(r => {
+        const buttons = '<br><br>' + btn_(actionUrl_('approve', pro.id, ev.getId(), r.isPro), '✅ Aprovar', '#1a7f4b') + ' &nbsp; ' +
+          btn_(actionUrl_('reject', pro.id, ev.getId(), r.isPro), 'Recusar ou responder', '#b42318');
         MailApp.sendEmail({
           to: r.email, replyTo: email, name: st.studioName,
           subject: 'Novo pedido: ' + svc.name + (r.isPro ? '' : ' com ' + pro.name) + ' — ' + when,
@@ -433,29 +433,46 @@ function approve_(ev, pro) {
   if (ev.getTag('email')) sendConfirmation_(ev, pro);
 }
 
-function reject_(ev, pro) {
+/** Caixa com a mensagem de quem recusou/cancelou (vazia se não houver mensagem). */
+function msgBox_(msg, from) {
+  msg = String(msg || '').trim().slice(0, 600);
+  if (!msg) return '';
+  return '<div style="background:#f4f6fb;border-left:4px solid #ff5c5c;border-radius:10px;padding:12px 14px;margin:16px 0;color:#2b2d42">' +
+    '<b>Mensagem de ' + esc_(from) + ':</b><br>' + esc_(msg).replace(/\n/g, '<br>') + '</div>';
+}
+
+/** Quem assina a mensagem e para onde vão as respostas do cliente. byPro = veio do e-mail do profissional. */
+function signer_(pro, byPro) {
+  return byPro && pro.email ? { name: pro.name, email: pro.email } : { name: settings_().studioName, email: adminEmail_() };
+}
+
+function reject_(ev, pro, msg, byPro) {
   const email = ev.getTag('email');
   if (email) {
+    const who = signer_(pro, byPro);
     MailApp.sendEmail({
-      to: email, name: settings_().studioName,
+      to: email, name: settings_().studioName, replyTo: who.email,
       subject: 'Sobre o teu pedido — ' + svcName_(ev),
       htmlBody: mail_('Não foi possível confirmar',
         'Olá ' + esc_(ev.getTag('name')) + ',<br><br>Infelizmente não conseguimos confirmar <b>' + esc_(svcName_(ev)) +
-        '</b> para ' + esc_(fmtWhen_(ev.getStartTime())) + '. Por favor escolhe outro horário na nossa agenda.' + siteLink_()),
+        '</b> com ' + esc_(pro.name) + ' para ' + esc_(fmtWhen_(ev.getStartTime())) + '.' + msgBox_(msg, who.name) +
+        (msg ? 'Podes responder a este e-mail ou ' : ' Por favor ') + 'escolhe outro horário na nossa agenda.' + siteLink_()),
     });
   }
   ev.deleteEvent();
 }
 
-function cancel_(ev, pro, notify) {
+function cancel_(ev, pro, notify, msg, byPro) {
   const email = ev.getTag('email');
   if (notify && email) {
+    const who = signer_(pro, byPro);
     MailApp.sendEmail({
-      to: email, name: settings_().studioName,
+      to: email, name: settings_().studioName, replyTo: who.email,
       subject: 'Marcação cancelada — ' + svcName_(ev),
       htmlBody: mail_('Marcação cancelada',
         'Olá ' + esc_(ev.getTag('name')) + ',<br><br>A tua marcação de <b>' + esc_(svcName_(ev)) + '</b> com ' + esc_(pro.name) +
-        ' para ' + esc_(fmtWhen_(ev.getStartTime())) + ' foi cancelada. Para remarcar, escolhe outro horário na nossa agenda.' + siteLink_()),
+        ' para ' + esc_(fmtWhen_(ev.getStartTime())) + ' foi cancelada.' + msgBox_(msg, who.name) +
+        (msg ? 'Podes responder a este e-mail ou ' : ' Para remarcar, ') + 'escolhe outro horário na nossa agenda.' + siteLink_()),
     });
   }
   ev.deleteEvent();
@@ -493,19 +510,46 @@ function decisionPage_(p, approve) {
   if (ev.getTag('status') !== 'pending') return page_('Já tratado', 'Este pedido já foi tratado anteriormente.');
 
   const name = ev.getTag('name');
-  const info = esc_(name) + ' · ' + esc_(svcName_(ev)) + ' com ' + esc_(pro.name) + '<br>' + esc_(fmtWhen_(ev.getStartTime()));
+  const byPro = p.by === 'pro';
+  const info = '<b>' + esc_(name) + '</b><br>' + esc_(svcName_(ev)) + ' com ' + esc_(pro.name) + '<br>' + esc_(fmtWhen_(ev.getStartTime()));
 
   // Passo de confirmação: evita que os filtros de e-mail "cliquem" no link sozinhos.
   if (p.confirm !== '1') {
-    return page_((approve ? 'Aprovar' : 'Recusar') + ' marcação?', info,
-      btn_(actionUrl_(action, pro.id, p.id) + '&confirm=1', approve ? 'Sim, aprovar' : 'Sim, recusar', approve ? '#1a7f4b' : '#b42318'));
+    if (approve) {
+      return page_('Aprovar marcação?', info,
+        btn_(actionUrl_(action, pro.id, p.id, byPro) + '&confirm=1', 'Sim, aprovar', '#1a7f4b'));
+    }
+    return rejectForm_(p, pro, info, name);
   }
   if (approve) {
     approve_(ev, pro);
     return page_('Aprovada ✅', esc_(name) + ' já recebeu a confirmação por e-mail.');
   }
-  reject_(ev, pro);
-  return page_('Recusada', 'O horário foi libertado e ' + esc_(name) + ' foi avisado(a).');
+  const msg = clean_(String(p.msg || '').replace(/\r?\n/g, ' ⏎ '), 600).replace(/ ⏎ /g, '\n');
+  reject_(ev, pro, msg, byPro);
+  return page_('Recusada', 'O horário foi libertado e ' + esc_(name) + ' foi avisado(a)' + (msg ? ', com a tua mensagem.' : '.'));
+}
+
+/** Página para recusar com uma mensagem opcional para o cliente (com frases prontas). */
+function rejectForm_(p, pro, info, name) {
+  const first = esc_(String(name).split(' ')[0]);
+  const ideas = ['Nesse horário não tenho disponibilidade. Podes escolher outro dia?',
+                 'Nesse dia não vou estar no estúdio. Tens disponibilidade noutro dia da semana?',
+                 'Para este serviço preciso de mais tempo. Liga-nos para combinarmos.'];
+  const hidden = { action: 'reject', pro: pro.id, id: p.id, t: p.t, by: p.by || '', confirm: '1' };
+  const html =
+    '<form method="get" action="' + esc_(ScriptApp.getService().getUrl()) + '" target="_top" style="text-align:left">' +
+    Object.keys(hidden).map(k => '<input type="hidden" name="' + k + '" value="' + esc_(hidden[k]) + '">').join('') +
+    '<label for="m" style="font-weight:700;display:block;margin:4px 0 6px">Mensagem para ' + first + ' (opcional)</label>' +
+    '<textarea id="m" name="msg" rows="4" maxlength="600" placeholder="Ex.: Nesse dia não consigo, mas tenho sexta às 15h." ' +
+    'style="width:100%;box-sizing:border-box;font:inherit;padding:12px;border:2px solid #e6e9f2;border-radius:12px"></textarea>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 18px">' +
+    ideas.map(t => '<button type="button" onclick="document.getElementById(\'m\').value=this.textContent" ' +
+      'style="border:2px solid #e6e9f2;background:#f4f6fb;border-radius:999px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;text-align:left">' + esc_(t) + '</button>').join('') +
+    '</div>' +
+    '<button type="submit" style="width:100%;padding:14px;border:0;border-radius:12px;background:#b42318;color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer">Recusar e avisar ' + first + '</button>' +
+    '</form>';
+  return page_('Recusar pedido?', info, html);
 }
 
 /* ---------- Disponibilidade ---------- */
@@ -1006,9 +1050,9 @@ function sign_(s) {
 
 function token_(id, action) { return sign_(id + '|' + action).slice(0, 32); }
 
-function actionUrl_(action, proId, eventId) {
+function actionUrl_(action, proId, eventId, byPro) {
   return ScriptApp.getService().getUrl() + '?action=' + action + '&pro=' + encodeURIComponent(proId) +
-    '&id=' + encodeURIComponent(eventId) + '&t=' + token_(eventId, action);
+    '&id=' + encodeURIComponent(eventId) + '&t=' + token_(eventId, action) + (byPro ? '&by=pro' : '');
 }
 
 function googleCalUrl_(ev, svc, pro) {
@@ -1050,8 +1094,8 @@ function mail_(title, body) {
 
 function page_(title, html, extra) {
   return HtmlService.createHtmlOutput(
-    '<div style="font-family:system-ui,Arial,sans-serif;max-width:480px;margin:48px auto;padding:0 16px;text-align:center">' +
+    '<base target="_top"><div style="font-family:system-ui,Arial,sans-serif;max-width:480px;margin:48px auto;padding:0 16px;text-align:center">' +
     '<h1 style="font-size:22px">' + esc_(title) + '</h1><p style="color:#444;line-height:1.5">' + html + '</p>' +
-    (extra ? '<p style="margin-top:24px">' + extra + '</p>' : '') + '</div>'
+    (extra ? '<div style="margin-top:24px">' + extra + '</div>' : '') + '</div>'
   ).setTitle(title).addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }

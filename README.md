@@ -58,6 +58,8 @@ Em **Definições → Quem aprova os pedidos online** escolhes para onde vai o e
 - **🙋 O profissional:** cada pedido vai para o e-mail do próprio profissional. Ele aprova num toque, **sem precisar de entrar no painel**.
 - **🤝 Ambos:** vai para os dois, e quem carregar primeiro decide. O outro, se clicar depois, vê "Já tratado".
 
+**Responder ao cliente ao recusar ou cancelar:** ao tocar em **Recusar ou responder** no e-mail, ou em **Recusar / Cancelar** no painel, abre-se um campo para escrever uma mensagem ao cliente (há frases prontas). O cliente recebe-a em destaque no e-mail e, se responder, a resposta vai para o profissional (se recusou pelo e-mail dele) ou para o estúdio.
+
 O e-mail do profissional define-se em **Profissionais → Editar**. Se o profissional não tiver e-mail, os pedidos dele vão para o estúdio. Com a confirmação automática ligada, estes e-mails servem só de aviso.
 
 ## Alertas de novos pedidos
