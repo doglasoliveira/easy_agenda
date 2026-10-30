@@ -143,6 +143,17 @@
   .pop p { margin: 0; color: var(--muted); font-size: 15px; }
   .pop .primary { margin-top: 20px; }
   @keyframes popIn { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+  .busy { border: 0; padding: 22px 28px 20px; border-radius: 26px; background: var(--card); color: var(--ink); text-align: center; min-width: 220px; max-width: calc(100vw - 32px);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, .08), 0 30px 60px rgba(0, 0, 0, .25); outline: none; }
+  .busy[open] { animation: busyIn .25s cubic-bezier(.34, 1.56, .64, 1); }
+  .busy::backdrop { background: rgba(27, 29, 43, .35); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .busy .bdots { display: flex; justify-content: center; gap: 9px; padding: 6px 0 12px; }
+  .busy .bdots i { width: 16px; height: 16px; border-radius: 50%; background: #ff5c5c; animation: bhop .9s ease-in-out infinite; }
+  .busy .bdots i:nth-child(2) { background: #ffb703; animation-delay: .15s; }
+  .busy .bdots i:nth-child(3) { background: #18b8a5; animation-delay: .3s; }
+  .busy p { margin: 0; font-weight: 900; font-size: 16px; }
+  @keyframes bhop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes busyIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
 
   @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -204,12 +215,18 @@ async function api(params) {
   return j;
 }
 async function postBooking(data) {
-  if (!API_URL) { await sleep(700); return { ok: true, status: 'pending' }; }
-  // text/plain evita o pedido "preflight" de CORS, que o Apps Script não suporta
-  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'book', ...data }) });
-  const j = await r.json();
-  if (j.error) throw new Error(j.error);
-  return j;
+  busyStart('A enviar o teu pedido…');
+  try {
+    if (!API_URL) { await sleep(700); return { ok: true, status: 'pending' }; }
+    // text/plain evita o pedido "preflight" de CORS, que o Apps Script não suporta
+    const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'book', ...data }) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    return j;
+  } catch (ex) {
+    if (ex instanceof TypeError) throw new Error('Sem ligação à internet. Verifica a rede e tenta de novo.');
+    throw ex;
+  } finally { busyEnd(); }
 }
 
 /* ---------- Dados de demonstração (só quando API_URL está vazio) ---------- */
@@ -370,6 +387,28 @@ function renderDone(data, confirmed) {
   confetti();
 }
 
+/* ---------- aviso "a carregar" (por cima de tudo, bloqueia cliques repetidos) ---------- */
+const BUSY = { n: 0, timer: null, shownAt: 0 };
+function busyStart(msg) {
+  const d = document.getElementById('busy');
+  document.getElementById('busyText').textContent = msg || 'A carregar…';
+  if (BUSY.n++ > 0) return;
+  clearTimeout(BUSY.timer);
+  BUSY.timer = setTimeout(() => {           // só aparece se demorar mais de 150 ms (evita piscar)
+    if (BUSY.n > 0 && !d.open) { d.showModal(); BUSY.shownAt = Date.now(); }
+  }, 150);
+}
+function busyEnd() {
+  if (--BUSY.n > 0) return;
+  BUSY.n = 0;
+  clearTimeout(BUSY.timer);
+  const d = document.getElementById('busy');
+  if (!d.open) return;
+  const left = 350 - (Date.now() - BUSY.shownAt);  // fica pelo menos 350 ms para se perceber
+  BUSY.timer = setTimeout(() => { if (BUSY.n === 0 && d.open) d.close(); }, Math.max(0, left));
+}
+document.addEventListener('DOMContentLoaded', () => document.getElementById('busy').addEventListener('cancel', e => e.preventDefault()));
+
 /* ---------- popup no estilo do app ---------- */
 function popup(icon, title, text, onClose, okLabel = 'Percebi') {
   const d = document.getElementById('pop');
@@ -426,6 +465,10 @@ function applyTheme(t) {
   }
 })();
 </script>
+<dialog id="busy" class="busy" aria-live="polite" aria-busy="true">
+  <div class="bdots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <p id="busyText">A carregar…</p>
+</dialog>
 <dialog id="pop" class="pop" aria-labelledby="popTitle" aria-describedby="popText">
   <div class="pop-ico" id="popIco" aria-hidden="true">😬</div>
   <h3 id="popTitle">Ups!</h3>

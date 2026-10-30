@@ -238,6 +238,18 @@
   .pop.danger .pop-actions .btn.primary:active { box-shadow: 0 1px 0 #a8262a; }
   @keyframes popIn { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
   @keyframes bounceIn { 0% { transform: scale(0) rotate(-15deg); } 70% { transform: scale(1.15) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+  dialog.busy { width: fit-content; max-height: none; }
+  .busy { border: 0; padding: 22px 28px 20px; border-radius: 26px; background: var(--card); color: var(--ink); text-align: center; min-width: 220px; max-width: calc(100vw - 32px);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, .08), 0 30px 60px rgba(0, 0, 0, .25); outline: none; }
+  .busy[open] { animation: busyIn .25s cubic-bezier(.34, 1.56, .64, 1); }
+  .busy::backdrop { background: rgba(27, 29, 43, .35); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .busy .bdots { display: flex; justify-content: center; gap: 9px; padding: 6px 0 12px; }
+  .busy .bdots i { width: 16px; height: 16px; border-radius: 50%; background: #ff5c5c; animation: bhop .9s ease-in-out infinite; }
+  .busy .bdots i:nth-child(2) { background: #ffb703; animation-delay: .15s; }
+  .busy .bdots i:nth-child(3) { background: #18b8a5; animation-delay: .3s; }
+  .busy p { margin: 0; font-weight: 900; font-size: 16px; }
+  @keyframes bhop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes busyIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
   .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 16px;
     font-size: 15px; font-weight: 800; max-width: calc(100vw - 32px); box-shadow: 0 6px 0 rgba(0, 0, 0, .15); z-index: 10; animation: toastIn .35s cubic-bezier(.34, 1.56, .64, 1); }
   .toast.bad { background: var(--err); color: #fff; }
@@ -295,6 +307,10 @@
 
 <dialog id="dlg"><form id="dlgForm" novalidate></form></dialog>
 <div id="toast" class="toast" hidden></div>
+<dialog id="busy" class="busy" aria-live="polite" aria-busy="true">
+  <div class="bdots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <p id="busyText">A carregar…</p>
+</dialog>
 <dialog id="pop" class="pop" aria-labelledby="popTitle" aria-describedby="popText">
   <div class="pop-ico" id="popIco" aria-hidden="true"></div>
   <h3 id="popTitle"></h3>
@@ -382,16 +398,57 @@ function toast(msg, bad) {
   clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), bad ? 5000 : 2800);
 }
 
+/* ---------- aviso "a carregar" (por cima de tudo, bloqueia cliques repetidos) ---------- */
+const BUSY = { n: 0, timer: null, shownAt: 0 };
+function busyStart(msg) {
+  const d = document.getElementById('busy');
+  document.getElementById('busyText').textContent = msg || 'A carregar…';
+  if (BUSY.n++ > 0) return;
+  clearTimeout(BUSY.timer);
+  BUSY.timer = setTimeout(() => {           // só aparece se demorar mais de 150 ms (evita piscar)
+    if (BUSY.n > 0 && !d.open) { d.showModal(); BUSY.shownAt = Date.now(); }
+  }, 150);
+}
+function busyEnd() {
+  if (--BUSY.n > 0) return;
+  BUSY.n = 0;
+  clearTimeout(BUSY.timer);
+  const d = document.getElementById('busy');
+  if (!d.open) return;
+  const left = 350 - (Date.now() - BUSY.shownAt);  // fica pelo menos 350 ms para se perceber
+  BUSY.timer = setTimeout(() => { if (BUSY.n === 0 && d.open) d.close(); }, Math.max(0, left));
+}
+document.getElementById('busy').addEventListener('cancel', e => e.preventDefault()); // a tecla Esc não fecha
+
+// Frases do aviso "a carregar" para cada ação (as listas já têm o seu próprio indicador na página)
+const BUSY_MSG = {
+  getAll: 'A carregar…', login: 'A entrar…', setPassword: 'A guardar a senha…', requestCode: 'A enviar o código…',
+  saveService: 'A guardar o serviço…', deleteService: 'A apagar o serviço…', savePro: 'A guardar o profissional…',
+  deletePro: 'A apagar o profissional…', saveSettings: 'A guardar as definições…', saveClosed: 'A guardar…',
+  createBooking: 'A criar a marcação…', addBlock: 'A adicionar a folga…', deleteBlock: 'A apagar a folga…',
+  addUser: 'A enviar o convite…', removeUser: 'A remover o acesso…', changePassword: 'A alterar a senha…',
+};
+const STATUS_MSG = { confirmed: 'A confirmar…', rejected: 'A recusar o pedido…', cancelled: 'A cancelar a marcação…', noshow: 'A registar a falta…' };
+
 async function call(op, params = {}) {
-  if (DEMO_MODE) return demoCall(op, JSON.parse(JSON.stringify(params)));
-  const r = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita o preflight de CORS
-    body: JSON.stringify({ action: 'admin', op, token: TOKEN, ...params }),
-  });
-  const j = await r.json();
-  if (j.error) { if (j.auth) logout(j.error); throw new Error(j.error); }
-  return j;
+  const msg = op === 'setStatus' ? STATUS_MSG[params.status] || 'A atualizar…' : BUSY_MSG[op];
+  if (msg) busyStart(msg);
+  try {
+    if (DEMO_MODE) return await demoCall(op, JSON.parse(JSON.stringify(params)));
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita o preflight de CORS
+      body: JSON.stringify({ action: 'admin', op, token: TOKEN, ...params }),
+    });
+    const j = await r.json();
+    if (j.error) { if (j.auth) logout(j.error); throw new Error(j.error); }
+    return j;
+  } catch (ex) {
+    if (ex instanceof TypeError) throw new Error('Sem ligação ao servidor. Verifica a internet e tenta de novo.');
+    throw ex;
+  } finally {
+    if (msg) busyEnd();
+  }
 }
 
 /* ---------- diálogo genérico ---------- */
