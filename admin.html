@@ -250,6 +250,18 @@
   .busy p { margin: 0; font-weight: 900; font-size: 16px; }
   @keyframes bhop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
   @keyframes busyIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+  .notices { position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px; z-index: 20; display: grid; gap: 10px; width: min(360px, calc(100vw - 28px)); }
+  .notice { display: flex; gap: 12px; align-items: flex-start; background: var(--card); color: var(--ink); border-radius: 20px; padding: 12px 12px 12px 14px;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, .08), 0 18px 40px rgba(0, 0, 0, .2); border: 3px solid var(--c4); animation: noticeIn .45s cubic-bezier(.34, 1.56, .64, 1); }
+  .notice .ni { width: 42px; height: 42px; flex: none; border-radius: 14px; background: var(--c4); display: grid; place-items: center; font-size: 22px;
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .14); animation: ring 1.2s ease-in-out 2; }
+  .notice .nt { flex: 1; min-width: 0; }
+  .notice .nt b { display: block; font-size: 15px; }
+  .notice .nt small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .notice .na { display: flex; gap: 6px; margin-top: 8px; }
+  .notice .x { background: none; border: 0; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+  @keyframes noticeIn { from { opacity: 0; transform: translateX(40px) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes ring { 0%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-14deg); } 20%, 40% { transform: rotate(14deg); } 60% { transform: rotate(0); } }
   .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 16px;
     font-size: 15px; font-weight: 800; max-width: calc(100vw - 32px); box-shadow: 0 6px 0 rgba(0, 0, 0, .15); z-index: 10; animation: toastIn .35s cubic-bezier(.34, 1.56, .64, 1); }
   .toast.bad { background: var(--err); color: #fff; }
@@ -307,6 +319,7 @@
 
 <dialog id="dlg"><form id="dlgForm" novalidate></form></dialog>
 <div id="toast" class="toast" hidden></div>
+<div id="notices" class="notices" aria-live="polite"></div>
 <dialog id="busy" class="busy" aria-live="polite" aria-busy="true">
   <div class="bdots" aria-hidden="true"><i></i><i></i><i></i></div>
   <p id="busyText">A carregar…</p>
@@ -485,7 +498,7 @@ function showLogin(msg) {
   renderAuth();
   if (msg) toast(msg, true);
 }
-function logout(msg) { TOKEN = null; session.del('agenda_token'); AUTH.mode = 'login'; showLogin(msg); }
+function logout(msg) { TOKEN = null; session.del('agenda_token'); clearInterval(PEND.timer); PEND.known = null; setPendingCount(0); AUTH.mode = 'login'; showLogin(msg); }
 
 function renderAuth() {
   const m = AUTH.mode, e = esc(AUTH.email);
@@ -598,9 +611,11 @@ $('#tabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (
 async function loadAll() {
   DATA = await call('getAll');
   $('#login').hidden = true; $('#shell').hidden = false;
+  if (location.hash === '#bookings') { TAB = 'bookings'; history.replaceState(null, '', location.pathname + location.search); }
   applyHeader();
   render();
   refreshPendingCount();
+  startPendingWatch();
 }
 function applyTheme(t) {
   const root = document.documentElement;
@@ -611,18 +626,106 @@ function applyHeader() {
   applyTheme(DATA.settings.theme);
   $('#who').textContent = DATA.me ? '· ' + (DATA.me.name || DATA.me.email) : '';
   $('#studioName').textContent = DATA.settings.studioName;
-  document.title = 'Painel · ' + DATA.settings.studioName;
+  setPendingCount(PEND.count);
   const link = $('#siteLink');
   link.hidden = !DATA.settings.siteUrl; link.href = DATA.settings.siteUrl || '#';
 }
+/* =============================== ALERTAS DE NOVOS PEDIDOS =============================== */
+/* Verifica os pedidos pendentes a cada minuto. Quando chega um novo: aviso no ecrã, som, número no
+   separador/título/ícone da app e, se autorizado, notificação do sistema (mesmo com o painel noutra aba). */
+const PEND = { known: null, count: 0, timer: null };
+const ALERTS = (() => { try { return Object.assign({ sound: true, notify: false }, JSON.parse(localStorage.getItem('easy_agenda_alerts') || '{}')); } catch (e) { return { sound: true, notify: false }; } })();
+const saveAlerts = () => { try { localStorage.setItem('easy_agenda_alerts', JSON.stringify(ALERTS)); } catch (e) {} };
+
+function setPendingCount(n) {
+  PEND.count = n;
+  const el = $('#pendingCount'); el.hidden = !n; el.textContent = n;
+  if (DATA) document.title = (n ? `(${n}) ` : '') + 'Painel · ' + DATA.settings.studioName;
+  try { if (n && navigator.setAppBadge) navigator.setAppBadge(n); else if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {}
+}
+
+// Atualiza a contagem a partir de uma lista de marcações; alerta só para pedidos que ainda não conhecíamos
+function trackPending(rows, alert) {
+  const pending = rows.filter(r => r.status === 'pending');
+  const fresh = PEND.known ? pending.filter(r => !PEND.known.has(r.id)) : [];
+  PEND.known = new Set(pending.map(r => r.id));
+  setPendingCount(pending.length);
+  if (alert && fresh.length) announce(fresh);
+  return fresh;
+}
+
 async function refreshPendingCount() {
+  if (!DATA || !TOKEN) return;
   try {
     const t = today();
     const { rows } = await call('listBookings', { from: iso(t), to: iso(addDays(t, DATA.settings.maxDaysAhead)) });
-    const n = rows.filter(r => r.status === 'pending').length;
-    const el = $('#pendingCount'); el.hidden = !n; el.textContent = n;
-  } catch (e) { /* ignora */ }
+    const fresh = trackPending(rows, !!PEND.known);
+    if (fresh.length && TAB === 'bookings' && !$('#dlg').open) loadBookings();
+    if (fresh.length && TAB === 'reports') loadReport(true, true);
+  } catch (e) { /* sem rede: tenta no próximo minuto */ }
 }
+
+function startPendingWatch() {
+  clearInterval(PEND.timer);
+  PEND.timer = setInterval(refreshPendingCount, 60000);
+}
+
+function announce(list) {
+  const r = list[0], more = list.length - 1;
+  const title = list.length === 1 ? '📩 Novo pedido de marcação' : `📩 ${list.length} novos pedidos de marcação`;
+  const text = `${r.name} · ${r.serviceName} com ${r.proName} · ${fmtDay(r.date)} às ${r.time}` + (more > 0 ? ` (+${more})` : '');
+  showNotice(title, text);
+  if (ALERTS.sound) chime();
+  if (ALERTS.notify && document.visibilityState !== 'visible') systemNotify(title, text);
+}
+
+function showNotice(title, text) {
+  const box = $('#notices');
+  const n = document.createElement('div');
+  n.className = 'notice'; n.setAttribute('role', 'status');
+  n.innerHTML = `<div class="ni" aria-hidden="true">🔔</div>
+    <div class="nt"><b>${esc(title)}</b><small>${esc(text)}</small>
+      <div class="na"><button class="btn sm primary" data-see>Ver pedidos</button></div></div>
+    <button class="x" aria-label="Fechar">×</button>`;
+  n.querySelector('[data-see]').onclick = () => { n.remove(); goBookings(); };
+  n.querySelector('.x').onclick = () => n.remove();
+  box.prepend(n);
+  while (box.children.length > 3) box.lastElementChild.remove();
+  setTimeout(() => n.remove(), 60000);
+}
+
+function goBookings() { TAB = 'bookings'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+// Som curto gerado no navegador (sem ficheiros)
+let AUDIO = null;
+function chime() {
+  try {
+    AUDIO = AUDIO || new (window.AudioContext || window.webkitAudioContext)();
+    if (AUDIO.state === 'suspended') AUDIO.resume();
+    const t0 = AUDIO.currentTime;
+    [[880, 0], [1320, .14]].forEach(([f, d]) => {
+      const o = AUDIO.createOscillator(), g = AUDIO.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0 + d); g.gain.linearRampToValueAtTime(.25, t0 + d + .02); g.gain.exponentialRampToValueAtTime(.001, t0 + d + .45);
+      o.connect(g).connect(AUDIO.destination); o.start(t0 + d); o.stop(t0 + d + .5);
+    });
+  } catch (e) {}
+}
+// Os navegadores só deixam tocar som depois de um clique: prepara o áudio no primeiro clique
+document.addEventListener('pointerdown', () => { try { AUDIO = AUDIO || new (window.AudioContext || window.webkitAudioContext)(); if (AUDIO.state === 'suspended') AUDIO.resume(); } catch (e) {} }, { once: true });
+
+async function systemNotify(title, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const opts = { body, icon: 'icons/admin-192.png', badge: 'icons/admin-192.png', tag: 'easy-agenda-pedido', renotify: true, data: { url: location.pathname + '#bookings' } };
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) reg.showNotification(title, opts);
+    else { const n = new Notification(title, opts); n.onclick = () => { window.focus(); goBookings(); n.close(); }; }
+  } catch (e) {}
+}
+
+// Clique numa notificação do sistema: o service worker pede para abrir as marcações
+if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.goto === 'bookings' && DATA) goBookings(); });
 
 function render() {
   $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === TAB));
@@ -840,7 +943,7 @@ async function loadBookings() {
     const todays = rows.filter(r => r.date === ti && r.status !== 'pending');
     const next = rows.filter(r => r.date > ti && r.status === 'confirmed');
     const past = rows.filter(r => r.date < ti && r.status !== 'pending').reverse();
-    const el = $('#pendingCount'); el.hidden = !pending.length; el.textContent = pending.length;
+    trackPending(rows.filter(r => r.date >= ti), false);
     const sec = (title, list, empty, note = '') => `<section class="card"><div class="row-between"><h3 style="margin:0">${title}
       <span class="muted small">(${list.length})</span></h3>${note ? `<span class="muted small">${note}</span>` : ''}</div>
       <div class="bk-list">${list.length ? list.map(bkItem).join('') : `<p class="empty">${empty}</p>`}</div></section>`;
@@ -1181,6 +1284,15 @@ function renderSettings(el) {
         <div><button class="btn primary" type="submit">Guardar definições</button></div>
       </form>
     </section>
+    <section class="card"><h3>🔔 Alertas de novos pedidos (neste aparelho)</h3>
+      <p class="muted small" style="margin:-4px 0 12px">Com o painel aberto, verificamos novos pedidos a cada minuto e mostramos um aviso no ecrã e o número no separador.</p>
+      <div class="stack">
+        <label class="check"><input type="checkbox" id="alSound" ${ALERTS.sound ? 'checked' : ''}> 🔊 Tocar um som quando chega um pedido</label>
+        <label class="check"><input type="checkbox" id="alNotify" ${ALERTS.notify && 'Notification' in window && Notification.permission === 'granted' ? 'checked' : ''}> 💬 Notificação do sistema (mesmo com o painel noutra aba ou minimizado)</label>
+        <p class="muted small" id="alInfo" style="margin:0"></p>
+        <div><button class="btn sm" type="button" id="alTest">▶️ Testar alerta</button></div>
+      </div>
+    </section>
     <section class="card"><h3>👤 A minha conta</h3>
       <p class="muted" style="margin:-4px 0 14px">Entras com <b>${esc(DATA.me?.email || '')}</b>${DATA.me?.role === 'owner' ? ' · dono da conta' : ''}.</p>
       <form id="pwForm" class="grid-auto" novalidate>
@@ -1220,6 +1332,27 @@ function renderSettings(el) {
       const r = await call('changePassword', { current: f.current.value, next: f.next.value });
       TOKEN = r.token; session.set('agenda_token', TOKEN); f.reset(); toast('Senha alterada.');
     } catch (ex) { toast(ex.message, true); }
+  };
+  const alInfo = () => {
+    const el = $('#alInfo');
+    if (!('Notification' in window)) el.textContent = 'Este navegador não suporta notificações do sistema. No iPhone, instala primeiro o painel como app.';
+    else if (Notification.permission === 'denied') el.textContent = 'As notificações estão bloqueadas para este site. Ativa-as nas definições do navegador (ícone do cadeado ao lado do endereço).';
+    else el.textContent = 'Nota: com o painel totalmente fechado, o aviso continua a chegar por e-mail.';
+  };
+  alInfo();
+  $('#alSound').onchange = e => { ALERTS.sound = e.target.checked; saveAlerts(); if (ALERTS.sound) chime(); };
+  $('#alNotify').onchange = async e => {
+    if (e.target.checked) {
+      let perm = 'Notification' in window ? Notification.permission : 'denied';
+      if (perm === 'default') perm = await Notification.requestPermission();
+      if (perm !== 'granted') { e.target.checked = false; ALERTS.notify = false; saveAlerts(); alInfo(); return toast('Não foi possível ativar as notificações neste navegador.', true); }
+      ALERTS.notify = true; toast('Notificações ativadas 🔔');
+    } else ALERTS.notify = false;
+    saveAlerts(); alInfo();
+  };
+  $('#alTest').onclick = () => {
+    const t = '📩 Novo pedido de marcação', x = 'Exemplo · Manicure com Ana · amanhã às 10:30';
+    showNotice(t, x); if (ALERTS.sound) chime(); if (ALERTS.notify) systemNotify(t, x);
   };
   $('#inviteForm').onsubmit = async e => {
     e.preventDefault();
@@ -1414,6 +1547,14 @@ async function demoCall(op, p) {
     }
     default: throw new Error('Operação desconhecida: ' + op);
   }
+}
+
+// Modo demonstração: simula um pedido novo (para experimentar os alertas). Na consola: demoNovoPedido()
+function demoNovoPedido() {
+  const p = demo.professionals[0], svc = demo.services.find(s => s.id === p.services[0]);
+  demo.bookings.push({ id: 'n' + Date.now(), pro: p.id, service: svc.id, date: iso(addDays(today(), 2)), startMin: 600, dur: svc.duration, price: svc.price,
+    status: 'pending', name: 'Cliente Novo', phone: '912345678', email: 'novo@mail.pt', notes: '', source: 'online' });
+  return refreshPendingCount();
 }
 
 /* =============================== INÍCIO =============================== */

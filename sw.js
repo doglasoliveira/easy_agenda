@@ -4,7 +4,7 @@
  * - Pedidos ao Apps Script (marcações, horários, painel) NUNCA são guardados: vão sempre à rede.
  * Ao alterar ficheiros, muda a VERSION para forçar a atualização nos telemóveis.
  */
-const VERSION = 'easy-agenda-v7';
+const VERSION = 'easy-agenda-v8';
 const SHELL = [
   './', './index.html', './admin.html', './pwa.js', './manifest.webmanifest', './admin.webmanifest',
   './icons/app.svg', './icons/app-192.png', './icons/app-512.png', './icons/app-apple-180.png', './icons/app-32.png',
@@ -53,4 +53,15 @@ self.addEventListener('fetch', e => {
     if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
     return res;
   })));
+});
+
+// Clique numa notificação de novo pedido: abre (ou foca) o painel nas Marcações
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './admin.html#bookings', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const panel = list.find(c => c.url.includes('admin.html'));
+    if (panel) { panel.postMessage({ goto: 'bookings' }); return panel.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });

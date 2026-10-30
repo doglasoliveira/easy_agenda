@@ -51,6 +51,16 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 3. **Profissionais:** cria cada profissional com os serviços e o horário. O formato do horário é `09:00-13:00, 14:00-19:00`, e dias em branco contam como folga.
 4. **Folgas / feriados:** marca as férias e os dias de estúdio fechado.
 
+## Alertas de novos pedidos
+
+Com o painel aberto, o Easy Agenda verifica novos pedidos **a cada minuto**. Quando chega um:
+- aparece um aviso no canto do ecrã com o botão **Ver pedidos**;
+- o separador **Marcações**, o título da aba ("(2) Painel · …") e o ícone da app instalada mostram quantos pedidos esperam aprovação;
+- toca um som curto (pode ser desligado);
+- se ativares em **Definições → Alertas**, aparece também uma **notificação do sistema** (Windows, Mac, Android), mesmo com o painel noutra aba ou minimizado. Ao clicar, abre as marcações.
+
+Estas opções são guardadas em cada aparelho. Com o painel completamente fechado, o aviso continua a chegar **por e-mail**.
+
 ## Contas do painel
 
 - **Utilizador = e-mail.** Cada pessoa entra com o seu e-mail e a sua senha.
