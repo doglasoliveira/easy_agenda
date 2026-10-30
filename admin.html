@@ -648,6 +648,11 @@ function periodRange(p) {
 
 function renderReports(el) {
   if (R.period !== 'custom') { const [a, b] = periodRange(R.period); R.from = iso(a); R.to = iso(b); }
+  // Profissionais e serviços apagados não aparecem nos filtros (o histórico deles continua nos totais)
+  const pros = DATA.professionals.filter(p => !p.deleted);
+  const svcs = DATA.services.filter(s => !s.deleted);
+  if (R.pro && !pros.some(p => p.id === R.pro)) R.pro = '';
+  if (R.service && !svcs.some(s => s.id === R.service)) R.service = '';
   const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`;
   el.innerHTML = `
     <section class="card">
@@ -659,11 +664,12 @@ function renderReports(el) {
         <div class="field" data-custom><label for="fFrom">De</label><input type="date" id="fFrom" value="${R.from}"></div>
         <div class="field" data-custom><label for="fTo">Até</label><input type="date" id="fTo" value="${R.to}"></div>
         <div class="field"><label for="fPro">Profissional</label><select id="fPro">${opt('', 'Todos', R.pro)}
-          ${DATA.professionals.map(p => opt(p.id, p.name + (p.deleted ? ' (apagado)' : p.active === false ? ' (inativo)' : ''), R.pro)).join('')}</select></div>
+          ${pros.map(p => opt(p.id, p.name + (p.active === false ? ' (inativo)' : ''), R.pro)).join('')}</select></div>
         <div class="field"><label for="fSvc">Serviço</label><select id="fSvc">${opt('', 'Todos', R.service)}
-          ${DATA.services.map(s => opt(s.id, s.name + (s.deleted ? ' (apagado)' : s.active === false ? ' (inativo)' : ''), R.service)).join('')}</select></div>
+          ${svcs.map(s => opt(s.id, s.name + (s.active === false ? ' (inativo)' : ''), R.service)).join('')}</select></div>
         <div class="field"><label for="fStatus">Estado (tabela)</label><select id="fStatus">${opt('', 'Todos', R.status)}
           ${Object.entries(STATUS).map(([k, l]) => opt(k, l, R.status)).join('')}</select></div>
+        <div class="field" style="align-self:end"><button class="btn" id="fRefresh" type="button">🔄 Atualizar</button></div>
       </div>
     </section>
     <div id="repBody" class="stack"><div class="dots"><i></i><i></i><i></i></div></div>`;
@@ -672,24 +678,37 @@ function renderReports(el) {
   $('#fPeriod').onchange = e => { R.period = e.target.value; renderReports(el); };
   $('#fFrom').onchange = e => { R.from = e.target.value; loadReport(); };
   $('#fTo').onchange = e => { R.to = e.target.value; loadReport(); };
+  $('#fRefresh').onclick = () => loadReport(true);
   R.limit = 50;
   $('#fPro').onchange = e => { R.pro = e.target.value; drawReport(); };
   $('#fSvc').onchange = e => { R.service = e.target.value; drawReport(); };
   $('#fStatus').onchange = e => { R.status = e.target.value; drawReport(); };
-  loadReport();
+  loadReport(true);
 }
 
-async function loadReport() {
+// force: pede sempre dados novos ao servidor; quiet: atualiza sem limpar o ecrã (atualização em segundo plano)
+async function loadReport(force, quiet) {
   if (!R.from || !R.to || R.from > R.to) { $('#repBody').innerHTML = '<p class="err">Escolhe um período válido.</p>'; return; }
   const key = R.from + '|' + R.to;
-  if (R.key === key && R.rows) return drawReport();
-  $('#repBody').innerHTML = '<div class="dots"><i></i><i></i><i></i></div>';
+  if (!force && R.key === key && R.rows) return drawReport();
+  if (!quiet || !R.rows) $('#repBody').innerHTML = '<div class="dots"><i></i><i></i><i></i></div>';
+  const btn = $('#fRefresh'); if (btn) btn.disabled = true;
   try {
     const { rows } = await call('listBookings', { from: R.from, to: R.to });
+    if (TAB !== 'reports' || key !== R.from + '|' + R.to) return; // entretanto mudou de separador ou de período
     R.rows = rows; R.key = key;
     drawReport();
-  } catch (e) { $('#repBody').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  } catch (e) { if (!quiet) $('#repBody').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  finally { const b = $('#fRefresh'); if (b) b.disabled = false; }
 }
+
+// Ao voltar ao painel (outra janela/app), atualiza o que está no ecrã: apanha marcações feitas pelos clientes
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !DATA || $('#shell').hidden || $('#dlg').open) return;
+  if (TAB === 'reports') loadReport(true, true);
+  else if (TAB === 'bookings') loadBookings();
+  refreshPendingCount();
+});
 
 function groupBy(rows, keyFn, labelFn) {
   const m = new Map();
