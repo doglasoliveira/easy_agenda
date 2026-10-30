@@ -5,152 +5,202 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Painel do Estúdio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f3f0; --card: #fff; --ink: #1f1b18; --muted: #74695f; --line: #e6ddd4; --soft: #faf7f4;
-    --accent: #b5527a; --accent-ink: #fff; --accent-soft: #f6e6ed;
-    --ok: #1a7f4b; --ok-soft: #e3f4ea; --warn: #9a6200; --warn-soft: #fdf1d8;
-    --info: #2357b5; --info-soft: #e5edfb; --err: #b42318; --err-soft: #fde8e6; --grey-soft: #eeeae6;
+    --bg: #f4f6fb; --dot: #e3e8f3; --card: #fff; --ink: #2b2d42; --muted: #7a7f99; --line: #e6e9f2; --soft: #f4f6fb;
+    --accent: #ff5c5c; --accent-dark: #d63c4a; --accent-ink: #fff; --accent-soft: #ffe8e8;
+    --c1: #ff7a45; --c2: #18b8a5; --c3: #3d8bff; --c4: #ffb703; --c5: #a35cff; --c6: #ff4d8d;
+    --ok: #0f9a72; --ok-soft: #dcf6ec; --warn: #b07800; --warn-soft: #fff1c9;
+    --info: #2f6fdc; --info-soft: #e2edff; --err: #e5383b; --err-soft: #ffe3e3; --grey-soft: #eceff6;
+    --shadow: 0 5px 0 rgba(43, 45, 66, .06), 0 10px 26px rgba(43, 45, 66, .07);
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #141210; --card: #1f1b18; --ink: #f3ede8; --muted: #a89c92; --line: #37302b; --soft: #191614;
-      --accent: #e08aad; --accent-ink: #1a1214; --accent-soft: #3a2630;
-      --ok: #5fd193; --ok-soft: #173326; --warn: #f2b84b; --warn-soft: #3a2c10;
-      --info: #8fb2ff; --info-soft: #1b2742; --err: #ff8a7f; --err-soft: #3d1a17; --grey-soft: #2c2622; }
+    :root { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950; --soft: #1f2232;
+      --accent-soft: #3d2730; --ok: #4fd6a5; --ok-soft: #173a2f; --warn: #ffcc4d; --warn-soft: #3b3115;
+      --info: #8db4ff; --info-soft: #1d2a48; --err: #ff7b7d; --err-soft: #432126; --grey-soft: #30344a;
+      --shadow: 0 5px 0 rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .25); }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { margin: 0; color: var(--ink); font: 600 15px/1.45 "Nunito", system-ui, sans-serif;
+    background: var(--bg) radial-gradient(var(--dot) 2px, transparent 2.5px) 0 0 / 22px 22px; min-height: 100vh; }
+  button, input, select, textarea { font-family: inherit; }
   [hidden] { display: none !important; }
-  h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
-  h2 { font-size: 20px; }
-  h3 { font-size: 15px; margin-bottom: 12px; }
-  a { color: var(--accent); }
+  h1, h2, h3 { margin: 0; letter-spacing: -.01em; font-weight: 900; }
+  h2 { font-size: 24px; }
+  h3 { font-size: 17px; margin-bottom: 12px; }
+  a { color: var(--accent); font-weight: 800; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
 
   /* login */
   .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-  .login form { width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; }
-  .login h1 { font-size: 22px; margin-bottom: 4px; }
+  .login form { width: 100%; max-width: 380px; background: var(--card); border-radius: 30px; padding: 30px 26px; box-shadow: var(--shadow); text-align: center; }
+  .login form .field { text-align: left; }
+  .login h1 { font-size: 26px; margin-bottom: 4px; }
+  .login .logo { margin: 0 auto 10px; width: 72px; height: 72px; font-size: 36px; border-radius: 24px; }
 
-  /* shell */
+  /* topo */
+  .logo { width: 46px; height: 46px; border-radius: 16px; background: var(--accent); display: grid; place-items: center; font-size: 23px;
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .15); flex: none; }
   .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; max-width: 1120px; margin: 0 auto; }
-  .top h1 { font-size: 19px; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .top h1 { font-size: 21px; }
   .top a { font-size: 13px; }
-  .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; max-width: 1120px; margin: 0 auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
-  .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; font: inherit; color: var(--muted); cursor: pointer; white-space: nowrap; }
-  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-  .tabs .count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; text-align: center; line-height: 18px; }
-  main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 80px; display: grid; gap: 16px; }
-  .demo { background: var(--warn-soft); color: var(--warn); text-align: center; font-size: 13px; padding: 8px 16px; }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 10px; max-width: 1120px; margin: 0 auto; scrollbar-width: none; }
+  .tabs button { background: var(--card); border: 0; border-radius: 999px; padding: 9px 16px; font-size: 15px; font-weight: 800; color: var(--muted);
+    cursor: pointer; white-space: nowrap; box-shadow: 0 4px 0 var(--line); transition: transform .1s; }
+  .tabs button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+  .tabs button.on { background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-dark); }
+  .tabs .count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 10px; background: var(--c4); color: #3a2a00;
+    font-size: 12px; font-weight: 900; text-align: center; line-height: 20px; animation: pulse 2s ease-in-out infinite; }
+  main { max-width: 1120px; margin: 0 auto; padding: 12px 16px 80px; display: grid; gap: 16px; animation: pop .35s cubic-bezier(.34, 1.56, .64, 1); }
+  .demo { background: var(--warn-soft); color: var(--warn); text-align: center; font-size: 13px; font-weight: 800; padding: 8px 16px; }
 
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; min-width: 0; }
+  .card { background: var(--card); border-radius: 24px; padding: 20px; min-width: 0; box-shadow: var(--shadow); }
   .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-  /* forms */
-  .field { display: grid; gap: 4px; min-width: 0; }
-  .field label, .lbl { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-  input, select, textarea { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; min-width: 0; }
-  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
-  input[type=checkbox] { width: auto; accent-color: var(--accent); }
-  .field label.check { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); font-size: 14px; }
-  .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
-  .checks { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 4px 0; }
+  /* formulários */
+  .field { display: grid; gap: 5px; min-width: 0; }
+  .field label, .lbl { font-size: 13px; font-weight: 800; color: var(--muted); }
+  input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 14px; border: 3px solid var(--line); background: var(--soft); color: var(--ink);
+    font-size: 15px; font-weight: 700; min-width: 0; transition: border-color .15s, background .15s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c3); background: var(--card); }
+  input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .field label.check { font-weight: 700; color: var(--ink); font-size: 15px; }
+  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
+  .checks { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0; }
+  .checks .check { background: var(--soft); border: 3px solid var(--line); border-radius: 999px; padding: 5px 12px 5px 8px; }
+  .checks .check:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stack { display: grid; gap: 12px; }
+  .stack { display: grid; gap: 14px; }
   .inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .inline input { width: auto; flex: 1 1 160px; }
 
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
-  .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .btn.ok { color: var(--ok); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 14px; border: 0;
+    background: var(--card); color: var(--ink); font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap; text-decoration: none;
+    box-shadow: 0 4px 0 var(--line), inset 0 0 0 2px var(--line); transition: transform .1s, box-shadow .1s; }
+  .btn:hover { filter: brightness(1.03); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line), inset 0 0 0 2px var(--line); }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-dark); }
+  .btn.primary:active { box-shadow: 0 1px 0 var(--accent-dark); }
+  .btn.ok { background: var(--ok); color: #fff; box-shadow: 0 4px 0 #0a7254; }
+  .btn.ok:active { box-shadow: 0 1px 0 #0a7254; }
   .btn.danger { color: var(--err); }
-  .btn.sm { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+  .btn.sm { padding: 6px 12px; font-size: 13px; border-radius: 12px; }
   .btn:disabled { opacity: .6; cursor: wait; }
-  .err { color: var(--err); font-size: 14px; }
+  .err { color: var(--err); font-size: 14px; font-weight: 800; }
 
-  /* KPIs */
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
-  .kpi span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
-  .kpi b { display: block; font-size: 26px; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-  .kpi small { color: var(--muted); font-size: 12px; }
+  /* indicadores */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .kpi { --c: var(--c1); background: var(--card); border-radius: 22px; padding: 14px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi::after { content: attr(data-icon); position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 13px; background: var(--c);
+    display: grid; place-items: center; font-size: 19px; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .14); }
+  .kpi span { display: block; font-size: 13px; color: var(--muted); font-weight: 800; padding-right: 44px; }
+  .kpi b { display: block; font-size: 28px; font-weight: 900; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .kpi small { color: var(--muted); font-size: 12px; font-weight: 700; }
 
   .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-  .bars { display: grid; gap: 10px; }
-  .bar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; font-size: 14px; }
+  .bars { display: grid; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center; font-size: 14px; font-weight: 800; }
   .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar { height: 10px; border-radius: 6px; background: var(--grey-soft); overflow: hidden; }
-  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+  .bar { height: 14px; border-radius: 8px; background: var(--grey-soft); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 8px; background: var(--accent); transform-origin: left; animation: grow .7s cubic-bezier(.34, 1.56, .64, 1); }
+  .bar-row:nth-child(6n+2) .bar i { background: var(--c2); } .bar-row:nth-child(6n+3) .bar i { background: var(--c3); }
+  .bar-row:nth-child(6n+4) .bar i { background: var(--c4); } .bar-row:nth-child(6n+5) .bar i { background: var(--c5); }
+  .bar-row:nth-child(6n) .bar i { background: var(--c1); }
   .bar-row .val { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
   .bar-row .val small { color: var(--muted); }
   .chart svg { width: 100%; height: auto; max-height: 260px; display: block; }
-  .chart .lbl-axis { fill: var(--muted); font-size: 10px; }
-  .chart rect.col { fill: var(--accent); }
-  .chart rect.col:hover { opacity: .75; }
+  .chart .lbl-axis { fill: var(--muted); font-size: 10px; font-weight: 700; }
+  .chart rect.col { fill: var(--c3); }
+  .chart rect.col:hover { fill: var(--accent); }
 
-  /* tables */
-  .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 800; padding: 8px 10px; border-bottom: 3px solid var(--line); white-space: nowrap; }
+  td { padding: 11px 10px; border-bottom: 2px solid var(--line); vertical-align: top; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--soft); }
 
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; white-space: nowrap; }
   .b-pending { background: var(--warn-soft); color: var(--warn); }
   .b-confirmed { background: var(--info-soft); color: var(--info); }
   .b-done { background: var(--ok-soft); color: var(--ok); }
   .b-noshow { background: var(--err-soft); color: var(--err); }
   .b-off { background: var(--grey-soft); color: var(--muted); }
-  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); font-size: 13px; }
-  .chip button { background: none; border: 0; color: inherit; cursor: pointer; padding: 0; font-size: 15px; line-height: 1; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--accent-soft); font-size: 13px; font-weight: 800; }
+  .chip button { background: none; border: 0; color: inherit; cursor: pointer; padding: 0; font-size: 16px; line-height: 1; font-weight: 900; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
-  /* bookings */
-  .bk-list { display: grid; }
-  .bk { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .bk:last-child { border-bottom: 0; }
-  .bk-when b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
-  .bk-when small { color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  /* marcações */
+  .bk-list { display: grid; gap: 10px; margin-top: 12px; }
+  .bk { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 18px; background: var(--soft); }
+  .bk-when { background: var(--card); border-radius: 14px; padding: 6px 0; text-align: center; box-shadow: 0 3px 0 var(--line); }
+  .bk-when b { display: block; font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .bk-when small { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: capitalize; }
   .bk-main { min-width: 0; }
   .bk-main small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
   .bk-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-  @media (max-width: 560px) { .bk { grid-template-columns: 56px 1fr; } .bk-act { grid-column: 1 / -1; justify-content: flex-start; } }
+  @media (max-width: 560px) { .bk { grid-template-columns: 62px 1fr; } .bk-act { grid-column: 1 / -1; justify-content: flex-start; } }
 
-  /* pros */
+  /* profissionais */
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .pro h3 { margin: 0; font-size: 17px; }
-  .pro .hours { font-size: 13px; color: var(--muted); margin: 10px 0; display: grid; gap: 2px; }
-  .pro .hours b { color: var(--ink); font-weight: 600; display: inline-block; width: 34px; }
+  .avatar { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 18px;
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .14); flex: none; }
+  .pro-head { display: flex; gap: 12px; align-items: center; min-width: 0; }
+  .pro h3 { margin: 0; font-size: 18px; }
+  .pro .hours { font-size: 13px; color: var(--muted); margin: 12px 0; display: grid; gap: 3px; }
+  .pro .hours b { color: var(--ink); font-weight: 900; display: inline-block; width: 36px; }
+  .svc-ico { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; font-size: 18px; margin-right: 8px; vertical-align: middle;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .14); }
 
   .hours-edit { display: grid; gap: 8px; }
   .hours-edit .hr { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: center; }
-  .hours-edit .hr span { font-size: 14px; font-weight: 600; }
+  .hours-edit .hr span { font-size: 14px; font-weight: 800; }
+  .emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .emoji-pick button { width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--line); background: var(--soft); font-size: 20px; cursor: pointer; }
+  .emoji-pick button.on { border-color: var(--accent); background: var(--accent-soft); }
 
-  dialog { border: 0; border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); background: var(--card); color: var(--ink); }
-  dialog::backdrop { background: rgba(20, 15, 12, .45); }
-  dialog form { padding: 22px; display: grid; gap: 14px; }
-  dialog h3 { font-size: 18px; margin: 0; }
+  dialog { border: 0; border-radius: 28px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); background: var(--card); color: var(--ink);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, .08), 0 30px 60px rgba(0, 0, 0, .25); }
+  dialog[open] { animation: pop .3s cubic-bezier(.34, 1.56, .64, 1); }
+  dialog::backdrop { background: rgba(27, 29, 43, .5); }
+  dialog form { padding: 24px; display: grid; gap: 14px; }
+  dialog h3 { font-size: 21px; margin: 0; }
   .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100vw - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.2); z-index: 10; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 16px;
+    font-size: 15px; font-weight: 800; max-width: calc(100vw - 32px); box-shadow: 0 6px 0 rgba(0, 0, 0, .15); z-index: 10; animation: toastIn .35s cubic-bezier(.34, 1.56, .64, 1); }
   .toast.bad { background: var(--err); color: #fff; }
-  .spinner { width: 22px; height: 22px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 24px auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+  .dots { display: flex; justify-content: center; gap: 8px; padding: 26px 0; }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); animation: hop .9s ease-in-out infinite; }
+  .dots i:nth-child(2) { background: var(--c4); animation-delay: .15s; }
+  .dots i:nth-child(3) { background: var(--c2); animation-delay: .3s; }
+  .empty { color: var(--muted); font-size: 15px; font-weight: 700; padding: 8px 0; }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 
-<div id="demoBanner" class="demo" hidden>Modo demonstração com dados fictícios. Cola o URL do Apps Script em <code>API_URL</code> para ligar ao estúdio real.</div>
+<div id="demoBanner" class="demo" hidden>🧪 Modo demonstração com dados fictícios. Cola o URL do Apps Script em <code>API_URL</code> para ligar ao estúdio real.</div>
 
 <div id="login" class="login" hidden>
   <form id="loginForm" class="stack">
     <div>
-      <h1>Painel do estúdio</h1>
+      <div class="logo" aria-hidden="true">📅</div>
+      <h1>Olá! 👋</h1>
       <p class="muted small" style="margin:4px 0 0">Entra com a senha de administração.</p>
     </div>
     <div class="field"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required></div>
@@ -161,19 +211,20 @@
 
 <div id="shell" hidden>
   <header class="top">
-    <div>
-      <h1 id="studioName">Painel</h1>
-      <a id="siteLink" target="_blank" rel="noopener" hidden>Ver site de marcações ↗</a>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">📅</div>
+      <div><h1 id="studioName">Painel</h1>
+      <a id="siteLink" target="_blank" rel="noopener" hidden>Ver site de marcações ↗</a></div>
     </div>
     <button class="btn sm" id="logout">Sair</button>
   </header>
   <nav class="tabs" id="tabs">
-    <button data-tab="reports">Relatórios</button>
-    <button data-tab="bookings">Marcações <span class="count" id="pendingCount" hidden></span></button>
-    <button data-tab="pros">Profissionais</button>
-    <button data-tab="services">Serviços</button>
-    <button data-tab="blocks">Folgas</button>
-    <button data-tab="settings">Definições</button>
+    <button data-tab="reports">📊 Relatórios</button>
+    <button data-tab="bookings">🗓️ Marcações <span class="count" id="pendingCount" hidden></span></button>
+    <button data-tab="pros">🙋 Profissionais</button>
+    <button data-tab="services">✨ Serviços</button>
+    <button data-tab="blocks">🏖️ Folgas</button>
+    <button data-tab="settings">⚙️ Definições</button>
   </nav>
   <main id="view"></main>
 </div>
@@ -217,6 +268,18 @@ const STATUS = { pending: 'Pendente', confirmed: 'Confirmado', done: 'Realizado'
 const badge = s => `<span class="badge b-${s}">${STATUS[s] || esc(s)}</span>`;
 const sum = (arr, f) => arr.reduce((a, x) => a + (+f(x) || 0), 0);
 const svcName = id => DATA.services.find(s => s.id === id)?.name || id;
+const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)'];
+const colorOf = (list, id) => COLORS[Math.max(0, list.findIndex(x => x.id === id)) % COLORS.length];
+const ICONS = [
+  [/pedicure|p[ée]s/i, '🦶'], [/manicure|unha|gel|verniz/i, '💅'], [/guitarra|viol[aã]o|ukulele/i, '🎸'], [/piano|teclado/i, '🎹'],
+  [/bateria|percuss/i, '🥁'], [/violino|violoncelo/i, '🎻'], [/canto|voz|vocal/i, '🎤'], [/sax|flauta|trompete/i, '🎷'],
+  [/cabelo|corte|barba|barbear/i, '✂️'], [/massag/i, '💆'], [/sobrancelha|pestana|c[ií]lio/i, '👁️'], [/maquilh|make/i, '💄'],
+  [/depila/i, '🌸'], [/facial|pele/i, '🧖'], [/yoga|pilates|treino|personal/i, '🧘'], [/aula|explica|curso/i, '📚'],
+];
+const EMOJIS = ['💅', '🦶', '✂️', '💆', '💄', '🧖', '🌸', '👁️', '🎸', '🎹', '🥁', '🎻', '🎤', '🎷', '📚', '🧘', '🎨', '✨'];
+const iconOf = s => s.icon || (ICONS.find(([re]) => re.test(s.name + ' ' + (s.description || ''))) || [0, '✨'])[1];
+const initials = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const svcIco = s => `<span class="svc-ico" style="background:${colorOf(DATA.services, s.id)}">${iconOf(s)}</span>`;
 
 function toast(msg, bad) {
   const t = $('#toast');
@@ -344,7 +407,7 @@ function renderReports(el) {
           ${Object.entries(STATUS).map(([k, l]) => opt(k, l, R.status)).join('')}</select></div>
       </div>
     </section>
-    <div id="repBody" class="stack"><div class="spinner"></div></div>`;
+    <div id="repBody" class="stack"><div class="dots"><i></i><i></i><i></i></div></div>`;
 
   $$('[data-custom]').forEach(x => (x.hidden = R.period !== 'custom'));
   $('#fPeriod').onchange = e => { R.period = e.target.value; renderReports(el); };
@@ -361,7 +424,7 @@ async function loadReport() {
   if (!R.from || !R.to || R.from > R.to) { $('#repBody').innerHTML = '<p class="err">Escolhe um período válido.</p>'; return; }
   const key = R.from + '|' + R.to;
   if (R.key === key && R.rows) return drawReport();
-  $('#repBody').innerHTML = '<div class="spinner"></div>';
+  $('#repBody').innerHTML = '<div class="dots"><i></i><i></i><i></i></div>';
   try {
     const { rows } = await call('listBookings', { from: R.from, to: R.to });
     R.rows = rows; R.key = key;
@@ -439,12 +502,12 @@ function drawReport() {
 
   $('#repBody').innerHTML = `
     <div class="kpis">
-      <div class="kpi"><span>Realizados</span><b>${done.length}</b><small>${clients} cliente${clients === 1 ? '' : 's'}</small></div>
-      <div class="kpi"><span>Faturação</span><b>${money(revenue)}</b><small>serviços realizados</small></div>
-      <div class="kpi"><span>Valor médio</span><b>${money(done.length ? revenue / done.length : 0)}</b><small>por serviço</small></div>
-      <div class="kpi"><span>Faltas</span><b>${noshow.length}</b><small>${(noshowRate * 100).toFixed(0)}% das marcações passadas</small></div>
-      <div class="kpi"><span>Agendados</span><b>${upcoming.length}</b><small>${money(sum(upcoming, r => r.price))} previstos</small></div>
-      <div class="kpi"><span>Pendentes</span><b>${pending.length}</b><small>a aguardar aprovação</small></div>
+      <div class="kpi" data-icon="✅" style="--c:var(--c2)"><span>Realizados</span><b>${done.length}</b><small>${clients} cliente${clients === 1 ? '' : 's'}</small></div>
+      <div class="kpi" data-icon="💰" style="--c:var(--c4)"><span>Faturação</span><b>${money(revenue)}</b><small>serviços realizados</small></div>
+      <div class="kpi" data-icon="🧾" style="--c:var(--c3)"><span>Valor médio</span><b>${money(done.length ? revenue / done.length : 0)}</b><small>por serviço</small></div>
+      <div class="kpi" data-icon="🙈" style="--c:var(--c6)"><span>Faltas</span><b>${noshow.length}</b><small>${(noshowRate * 100).toFixed(0)}% das marcações passadas</small></div>
+      <div class="kpi" data-icon="📅" style="--c:var(--c5)"><span>Agendados</span><b>${upcoming.length}</b><small>${money(sum(upcoming, r => r.price))} previstos</small></div>
+      <div class="kpi" data-icon="⏳" style="--c:var(--c1)"><span>Pendentes</span><b>${pending.length}</b><small>a aguardar aprovação</small></div>
     </div>
     <section class="card">${timelineHTML(done)}</section>
     <div class="two">
@@ -484,7 +547,7 @@ function exportCSV(rows) {
 /* =============================== MARCAÇÕES =============================== */
 function renderBookings(el) {
   el.innerHTML = `<div class="row-between"><h2>Marcações</h2><button class="btn primary" id="newBk">+ Nova marcação</button></div>
-    <div id="bkBody" class="stack"><div class="spinner"></div></div>`;
+    <div id="bkBody" class="stack"><div class="dots"><i></i><i></i><i></i></div></div>`;
   $('#newBk').onclick = openBookingDialog;
   $('#bkBody').onclick = onBookingAction;
   loadBookings();
@@ -613,9 +676,10 @@ function renderPros(el) {
     ${list.length ? `<div class="cards">${list.map(p => {
       const hrs = ORDER.filter(d => (p.hours?.[d] || []).length);
       return `<section class="card pro">
-        <div class="row-between"><div><h3>${esc(p.name)}</h3><span class="muted small">${esc(p.role || '')}</span></div>
+        <div class="row-between"><div class="pro-head"><div class="avatar" style="background:${colorOf(DATA.professionals, p.id)}">${esc(initials(p.name))}</div>
+          <div><h3>${esc(p.name)}</h3><span class="muted small">${esc(p.role || '')}</span></div></div>
           ${p.active === false ? '<span class="badge b-off">Inativo</span>' : ''}</div>
-        <div class="chips" style="margin-top:10px">${p.services.map(id => `<span class="chip">${esc(svcName(id))}</span>`).join('') || '<span class="muted small">Sem serviços</span>'}</div>
+        <div class="chips" style="margin-top:10px">${p.services.map(id => { const sv = DATA.services.find(x => x.id === id); return `<span class="chip">${sv ? iconOf(sv) + ' ' : ''}${esc(svcName(id))}</span>`; }).join('') || '<span class="muted small">Sem serviços</span>'}</div>
         <div class="hours">${hrs.length ? hrs.map(d => `<div><b>${WD_SHORT[d]}</b> ${esc(hoursText(p.hours[d]).replace(/-/g, '–'))}</div>`).join('') : '<div>Sem horário definido</div>'}</div>
         <div class="row-between"><span class="muted small">${p.email ? `📅 ${esc(p.email)}${p.sharedWith === p.email ? ' · partilhado' : ''}` : 'Sem e-mail (calendário não partilhado)'}</span>
           <button class="btn sm" data-edit="${esc(p.id)}">Editar</button></div>
@@ -660,7 +724,7 @@ function renderServices(el) {
       <thead><tr><th>Serviço</th><th class="num">Duração</th><th class="num">Preço</th><th>Profissionais</th><th></th></tr></thead>
       <tbody>${list.map(s => {
         const pros = DATA.professionals.filter(p => p.active !== false && p.services.includes(s.id));
-        return `<tr><td><b>${esc(s.name)}</b> ${s.active === false ? '<span class="badge b-off">Inativo</span>' : ''}
+        return `<tr><td>${svcIco(s)}<b>${esc(s.name)}</b> ${s.active === false ? '<span class="badge b-off">Inativo</span>' : ''}
           ${s.description ? `<br><span class="muted small">${esc(s.description)}</span>` : ''}</td>
           <td class="num">${s.duration} min</td><td class="num">${money(s.price)}</td>
           <td>${pros.length ? pros.map(p => esc(p.name)).join(', ') : '<span class="muted small">Ninguém, não aparece no site</span>'}</td>
@@ -671,22 +735,28 @@ function renderServices(el) {
 }
 
 function openSvcDialog(s = { duration: 60, price: 0, active: true }) {
-  openDialog(`<h3>${s.id ? 'Editar serviço' : 'Novo serviço'}</h3>
+  const form = openDialog(`<h3>${s.id ? 'Editar serviço' : 'Novo serviço'}</h3>
     <div class="field"><label>Nome</label><input name="name" value="${esc(s.name || '')}" required maxlength="60"></div>
     <div class="grid2">
       <div class="field"><label>Duração (min)</label><input name="duration" type="number" min="5" max="600" step="5" value="${s.duration}"></div>
       <div class="field"><label>Preço (${esc(DATA.settings.currency)})</label><input name="price" type="number" min="0" step="0.5" value="${s.price}"></div>
     </div>
     <div class="field"><label>Descrição curta</label><input name="description" value="${esc(s.description || '')}" maxlength="200"></div>
+    <div class="field"><span class="lbl">Ícone</span><div class="emoji-pick">${EMOJIS.map(e => `<button type="button" data-e="${e}" class="${(s.icon || iconOf(s.name ? s : { name: '' })) === e ? 'on' : ''}">${e}</button>`).join('')}</div>
+      <input type="hidden" name="icon" value="${esc(s.icon || '')}"></div>
     <label class="check"><input type="checkbox" name="active" ${s.active !== false ? 'checked' : ''}> Ativo (disponível para marcação)</label>
     ${s.id ? '<p class="muted small" style="margin:0">Alterar o preço não muda o valor das marcações já feitas.</p>' : ''}`,
   async f => {
     const r = await call('saveService', { service: { id: s.id, name: f.name.value, duration: +f.duration.value,
-      price: +f.price.value, description: f.description.value, active: f.active.checked } });
+      price: +f.price.value, description: f.description.value, icon: f.icon.value, active: f.active.checked } });
     DATA.services = r.services;
     toast('Serviço guardado.');
     render();
   });
+  $$('.emoji-pick button', form).forEach(btn => (btn.onclick = () => {
+    $$('.emoji-pick button', form).forEach(x => x.classList.toggle('on', x === btn));
+    form.icon.value = btn.dataset.e;
+  }));
 }
 
 /* =============================== FOLGAS =============================== */
@@ -711,7 +781,7 @@ function renderBlocks(el) {
       </form>
       <p class="muted small" style="margin:12px 0 0">Também podes criar um evento diretamente no calendário do profissional: esse horário fica bloqueado na mesma.</p>
     </section>
-    <section class="card"><h3>Próximas folgas (6 meses)</h3><div id="blkList"><div class="spinner"></div></div></section>
+    <section class="card"><h3>Próximas folgas (6 meses)</h3><div id="blkList"><div class="dots"><i></i><i></i><i></i></div></div></section>
     <section class="card"><h3>Estúdio fechado (feriados)</h3>
       <p class="muted small" style="margin:-6px 0 12px">Nestes dias não se aceitam marcações para nenhum profissional.</p>
       <div class="chips" id="closedChips" style="margin-bottom:12px"></div>

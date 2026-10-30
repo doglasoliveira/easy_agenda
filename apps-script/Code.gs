@@ -144,7 +144,7 @@ function saveService_(s) {
   const list = services_();
   const item = {
     id: s.id || uniqueId_(name, list), name, duration, price,
-    description: clean_(s.description, 200), active: s.active !== false,
+    description: clean_(s.description, 200), icon: clean_(s.icon, 8), active: s.active !== false,
   };
   upsert_(list, item);
   setStore_('services', list);
@@ -469,7 +469,7 @@ function publicConfig_() {
   return {
     studio: st.studioName, address: st.address, currency: st.currency, timeZone: tz_(),
     maxDays: st.maxDaysAhead, autoConfirm: !!st.autoConfirm, closedDates: closed_(),
-    services: offered.map(s => ({ id: s.id, name: s.name, duration: s.duration, price: s.price, description: s.description })),
+    services: offered.map(s => ({ id: s.id, name: s.name, duration: s.duration, price: s.price, description: s.description, icon: s.icon || '' })),
     professionals: pros,
   };
 }

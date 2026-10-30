@@ -4,73 +4,130 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marcações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #faf7f4; --card: #fff; --ink: #1f1b18; --muted: #6f655d; --line: #e8e0d8;
-    --accent: #b5527a; --accent-ink: #fff; --accent-soft: #f6e6ed; --ok: #1a7f4b; --err: #b42318;
+    --bg: #f4f6fb; --dot: #e3e8f3; --card: #ffffff; --ink: #2b2d42; --muted: #7a7f99; --line: #e6e9f2;
+    --brand: #ff5c5c; --brand-dark: #d63c4a; --brand-soft: #ffe8e8;
+    --c1: #ff7a45; --c2: #18b8a5; --c3: #3d8bff; --c4: #ffb703; --c5: #a35cff; --c6: #ff4d8d;
+    --ok: #12a37a; --err: #e5383b; --shadow: 0 6px 0 rgba(43, 45, 66, .06), 0 10px 28px rgba(43, 45, 66, .08);
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #171412; --card: #221e1b; --ink: #f3ede8; --muted: #a89c92; --line: #3a332e;
-      --accent: #e08aad; --accent-ink: #1a1214; --accent-soft: #3a2630; }
+    :root { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950;
+      --brand-soft: #3d2730; --shadow: 0 6px 0 rgba(0, 0, 0, .25), 0 10px 28px rgba(0, 0, 0, .25); }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px 64px; }
-  header h1 { font-size: 24px; margin: 0; letter-spacing: -.01em; }
-  header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-  .demo { background: #fff4d6; color: #6b4e00; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin: 16px 0 0; }
-  .steps { display: flex; gap: 6px; margin: 20px 0 16px; }
-  .steps span { flex: 1; height: 4px; border-radius: 4px; background: var(--line); }
-  .steps span.on { background: var(--accent); }
-  h2 { font-size: 18px; margin: 0 0 12px; }
-  .back { background: none; border: 0; color: var(--muted); padding: 0; margin: 0 0 12px; font: inherit; font-size: 14px; cursor: pointer; }
-  .list { display: grid; gap: 10px; }
-  .item { display: flex; justify-content: space-between; gap: 12px; align-items: center; text-align: left; width: 100%;
-    background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
-    font: inherit; cursor: pointer; transition: border-color .15s, transform .05s; }
-  .item:hover { border-color: var(--accent); }
-  .item:active { transform: scale(.99); }
-  .item small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
-  .item .tag { white-space: nowrap; font-weight: 600; color: var(--accent); font-size: 14px; }
-  .days { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scroll-snap-type: x mandatory; }
-  .day { flex: 0 0 64px; scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 0; text-align: center; font: inherit; color: var(--ink); cursor: pointer; }
-  .day b { display: block; font-size: 20px; }
-  .day small { color: var(--muted); font-size: 12px; text-transform: capitalize; }
-  .day.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .day.sel small { color: var(--accent-ink); }
-  .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; margin-top: 8px; }
-  .time { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; font: inherit;
-    color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
-  .time:hover { border-color: var(--accent); background: var(--accent-soft); }
-  .note { color: var(--muted); font-size: 14px; padding: 12px 0; }
-  .summary { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
-  label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 4px; }
-  input, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
-    color: var(--ink); font: inherit; }
-  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  body { margin: 0; color: var(--ink); font: 600 16px/1.45 "Nunito", system-ui, sans-serif;
+    background: var(--bg) radial-gradient(var(--dot) 2px, transparent 2.5px) 0 0 / 22px 22px; min-height: 100vh; }
+  button { font-family: inherit; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 72px; }
+
+  /* topo */
+  header { display: flex; align-items: center; gap: 14px; background: var(--card); border-radius: 26px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .logo { width: 52px; height: 52px; border-radius: 18px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 26px;
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .15); flex: none; animation: wiggle 2.8s ease-in-out infinite; }
+  header h1 { font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -.01em; line-height: 1.15; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .demo { background: #fff3c4; color: #7a5a00; border-radius: 16px; padding: 10px 14px; font-size: 13px; margin: 14px 0 0; }
+
+  /* passos */
+  .steps { display: flex; align-items: center; justify-content: space-between; margin: 22px 6px 18px; position: relative; }
+  .steps::before { content: ""; position: absolute; left: 18px; right: 18px; top: 50%; height: 6px; margin-top: -3px; border-radius: 6px; background: var(--line); }
+  .steps .fill { position: absolute; left: 18px; top: 50%; height: 6px; margin-top: -3px; border-radius: 6px; background: var(--brand); transition: width .45s cubic-bezier(.34, 1.56, .64, 1); }
+  .steps span { position: relative; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 15px;
+    background: var(--card); color: var(--muted); border: 3px solid var(--line); transition: all .3s; }
+  .steps span.on { background: var(--brand); border-color: var(--brand); color: #fff; transform: scale(1.08); }
+  .steps span.now { box-shadow: 0 0 0 6px var(--brand-soft); }
+
+  h2 { font-size: 22px; font-weight: 900; margin: 0 0 14px; }
+  .view { animation: pop .35s cubic-bezier(.34, 1.56, .64, 1); }
+  .back { background: var(--card); border: 0; color: var(--muted); padding: 8px 14px 8px 10px; margin: 0 0 14px; font-size: 14px; font-weight: 800;
+    border-radius: 999px; cursor: pointer; box-shadow: 0 3px 0 var(--line); }
+  .back:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+
+  /* cartões de escolha */
+  .list { display: grid; gap: 12px; }
+  .item { --c: var(--c1); display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; color: var(--ink);
+    background: var(--card); border: 3px solid transparent; border-radius: 24px; padding: 12px 14px; cursor: pointer;
+    box-shadow: 0 5px 0 var(--line); transition: transform .12s, box-shadow .12s, border-color .15s; font-size: 17px; font-weight: 800; }
+  .item:hover { border-color: var(--c); transform: translateY(-2px); box-shadow: 0 7px 0 var(--line); }
+  .item:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--line); }
+  .item:focus-visible { outline: 3px solid var(--c); outline-offset: 3px; }
+  .icon { width: 56px; height: 56px; flex: none; border-radius: 18px; background: var(--c); display: grid; place-items: center; font-size: 28px;
+    box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .14); color: #fff; font-weight: 900; }
+  .item .txt { flex: 1; min-width: 0; }
+  .item small { display: block; color: var(--muted); font-size: 14px; font-weight: 600; margin-top: 1px; }
+  .pill { white-space: nowrap; font-weight: 900; font-size: 14px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); padding: 6px 12px; border-radius: 999px; }
+  .meta { display: inline-flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .meta b { font-size: 12px; font-weight: 800; background: var(--bg); color: var(--muted); padding: 2px 9px; border-radius: 999px; }
+
+  /* dias e horas */
+  .summary { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 22px; padding: 10px 12px; margin-bottom: 16px; box-shadow: 0 4px 0 var(--line); font-size: 15px; }
+  .summary .icon { width: 44px; height: 44px; font-size: 22px; border-radius: 14px; }
+  .summary small { display: block; color: var(--muted); font-size: 13px; }
+  .days { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 14px; margin: 0 -4px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+  .day { flex: 0 0 70px; scroll-snap-align: start; background: var(--card); border: 3px solid transparent; border-radius: 20px; padding: 8px 0 10px;
+    text-align: center; color: var(--ink); cursor: pointer; box-shadow: 0 4px 0 var(--line); transition: transform .12s; }
+  .day:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+  .day b { display: block; font-size: 24px; font-weight: 900; line-height: 1.2; }
+  .day small { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+  .day.sel { background: var(--brand); color: #fff; box-shadow: 0 4px 0 var(--brand-dark); transform: translateY(-2px); }
+  .day.sel small { color: #fff; }
+  .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; margin-top: 10px; }
+  .time { background: var(--card); border: 3px solid transparent; border-radius: 16px; padding: 11px 0; font-size: 16px; font-weight: 900;
+    color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; box-shadow: 0 4px 0 var(--line); transition: transform .12s, border-color .15s; }
+  .time:hover { border-color: var(--c2); color: var(--c2); }
+  .time:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+  .note { color: var(--muted); font-size: 15px; padding: 10px 2px; margin: 0; }
+  .when { font-weight: 800; color: var(--muted); font-size: 14px; margin: 6px 2px 0; }
+
+  /* formulário */
+  .formcard { background: var(--card); border-radius: 26px; padding: 18px; box-shadow: var(--shadow); }
+  label { display: block; font-size: 14px; font-weight: 800; margin: 14px 0 6px; }
+  label:first-of-type { margin-top: 0; }
+  input, textarea { width: 100%; padding: 13px 14px; border-radius: 16px; border: 3px solid var(--line); background: var(--bg); color: var(--ink);
+    font: 700 16px "Nunito", system-ui, sans-serif; transition: border-color .15s, background .15s; }
+  input:focus, textarea:focus { outline: none; border-color: var(--c3); background: var(--card); }
   .hp { position: absolute; left: -9999px; }
-  .primary { width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 12px; background: var(--accent);
-    color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
-  .primary:disabled { opacity: .6; cursor: wait; }
-  .error { color: var(--err); font-size: 14px; margin-top: 10px; }
-  .done { text-align: center; padding: 24px 0; }
-  .done .icon { font-size: 48px; }
-  .spinner { width: 22px; height: 22px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%;
-    animation: spin .8s linear infinite; margin: 20px auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .primary { width: 100%; margin-top: 20px; padding: 16px; border: 0; border-radius: 20px; background: var(--brand); color: #fff;
+    font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--brand-dark); transition: transform .1s, box-shadow .1s; }
+  .primary:hover { filter: brightness(1.05); }
+  .primary:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--brand-dark); }
+  .primary:disabled { opacity: .7; cursor: wait; }
+  .primary.alt { background: var(--c2); box-shadow: 0 6px 0 #0e8a7c; }
+  .error { color: var(--err); font-size: 15px; font-weight: 800; margin-top: 12px; }
+
+  /* fim */
+  .done { text-align: center; background: var(--card); border-radius: 30px; padding: 30px 20px 24px; box-shadow: var(--shadow); }
+  .done .big { font-size: 64px; line-height: 1; display: inline-block; animation: bounce 1s cubic-bezier(.34, 1.56, .64, 1); }
+  .done h2 { font-size: 26px; margin: 12px 0 8px; }
+  .done .ticket { background: var(--bg); border: 3px dashed var(--line); border-radius: 20px; padding: 14px; margin: 16px 0 6px; }
+  .done .ticket b { display: block; font-size: 18px; font-weight: 900; }
+
+  .spinner { display: flex; justify-content: center; gap: 8px; padding: 26px 0; }
+  .spinner i { width: 14px; height: 14px; border-radius: 50%; background: var(--brand); animation: hop .9s ease-in-out infinite; }
+  .spinner i:nth-child(2) { background: var(--c4); animation-delay: .15s; }
+  .spinner i:nth-child(3) { background: var(--c2); animation-delay: .3s; }
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes bounce { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  @keyframes wiggle { 0%, 88%, 100% { transform: rotate(0); } 92% { transform: rotate(-10deg); } 96% { transform: rotate(10deg); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1 id="studio">Marcações</h1>
-    <p id="address"></p>
+    <div class="logo" aria-hidden="true">📅</div>
+    <div><h1 id="studio">Marcações</h1><p id="address"></p></div>
   </header>
-  <div id="demo" class="demo" hidden>Modo demonstração: cola o URL do Apps Script em <code>API_URL</code> para ligar ao Google Calendar.</div>
-  <div class="steps" id="steps"><span></span><span></span><span></span><span></span></div>
-  <main id="app"><div class="spinner"></div></main>
+  <div id="demo" class="demo" hidden>🧪 Modo demonstração: cola o URL do Apps Script em <code>API_URL</code> para ligar ao Google Calendar.</div>
+  <div class="steps" id="steps" aria-hidden="true"><div class="fill"></div><span>1</span><span>2</span><span>3</span><span>4</span></div>
+  <main id="app"><div class="spinner"><i></i><i></i><i></i></div></main>
 </div>
 
 <script>
@@ -87,7 +144,21 @@ const fmtPrice = v => typeof v === 'number'
   ? (v ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: state.config?.currency || 'EUR' }).format(v) : '')
   : (v || '');
 const fmtLong = s => { const [y, m, d] = s.split('-').map(Number);
-  return new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(y, m - 1, d)); };
+  const t = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(y, m - 1, d));
+  return t.charAt(0).toUpperCase() + t.slice(1); };
+const SPINNER = '<div class="spinner"><i></i><i></i><i></i></div>';
+
+/* ---------- cores e ícones ---------- */
+const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)'];
+const colorOf = (list, id) => COLORS[Math.max(0, list.findIndex(x => x.id === id)) % COLORS.length];
+const ICONS = [
+  [/pedicure|p[ée]s/i, '🦶'], [/manicure|unha|gel|verniz/i, '💅'], [/guitarra|viol[aã]o|ukulele/i, '🎸'], [/piano|teclado/i, '🎹'],
+  [/bateria|percuss/i, '🥁'], [/violino|violoncelo/i, '🎻'], [/canto|voz|vocal/i, '🎤'], [/sax|flauta|trompete/i, '🎷'],
+  [/cabelo|corte|barba|barbear/i, '✂️'], [/massag/i, '💆'], [/sobrancelha|pestana|c[ií]lio/i, '👁️'], [/maquilh|make/i, '💄'],
+  [/depila/i, '🌸'], [/facial|pele|limpeza de pele/i, '🧖'], [/yoga|pilates|treino|personal/i, '🧘'], [/aula|explica|curso/i, '📚'],
+];
+const iconOf = s => s.icon || (ICONS.find(([re]) => re.test(s.name + ' ' + (s.description || ''))) || [0, '✨'])[1];
+const initials = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
 /* ---------- API ---------- */
 async function api(params) {
@@ -130,22 +201,28 @@ async function demoApi(p) {
 
 /* ---------- UI ---------- */
 function setStep(n) {
-  document.querySelectorAll('#steps span').forEach((s, i) => s.classList.toggle('on', i < n));
+  const spans = document.querySelectorAll('#steps span');
+  spans.forEach((s, i) => { s.classList.toggle('on', i < n); s.classList.toggle('now', i === n - 1); });
+  document.querySelector('#steps .fill').style.width = `calc((100% - 36px) * ${(n - 1) / 3})`;
 }
-function backBtn(fn) {
-  const b = document.createElement('button');
-  b.className = 'back'; b.textContent = '← Voltar'; b.onclick = fn;
-  return b;
+function show(html, step, back) {
+  setStep(step);
+  $app.innerHTML = `<div class="view">${back ? '<button class="back">← Voltar</button>' : ''}${html}</div>`;
+  if (back) $app.querySelector('.back').onclick = back;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+const svcIcon = s => `<div class="icon" style="background:${colorOf(state.config.services, s.id)}">${iconOf(s)}</div>`;
+const proAvatar = p => `<div class="icon" style="background:${colorOf(state.config.professionals, p.id)}">${esc(initials(p.name))}</div>`;
 
 function renderServices() {
-  setStep(1);
   const c = state.config;
-  $app.innerHTML = `<h2>Escolhe o serviço</h2><div class="list">${c.services.map(s => `
-    <button class="item" data-id="${esc(s.id)}">
-      <span>${esc(s.name)}<small>${esc(s.duration)} min${s.description ? ' · ' + esc(s.description) : ''}</small></span>
-      <span class="tag">${esc(fmtPrice(s.price))}</span>
-    </button>`).join('')}</div>`;
+  show(`<h2>O que vamos marcar? ✨</h2><div class="list">${c.services.map(s => `
+    <button class="item" data-id="${esc(s.id)}" style="--c:${colorOf(c.services, s.id)}">
+      ${svcIcon(s)}
+      <span class="txt">${esc(s.name)}${s.description ? `<small>${esc(s.description)}</small>` : ''}
+        <span class="meta"><b>⏱ ${esc(s.duration)} min</b></span></span>
+      ${fmtPrice(s.price) ? `<span class="pill">${esc(fmtPrice(s.price))}</span>` : ''}
+    </button>`).join('')}</div>`, 1);
   $app.querySelectorAll('.item').forEach(b => b.onclick = () => {
     state.service = c.services.find(s => s.id === b.dataset.id);
     const pros = c.professionals.filter(p => p.services.includes(state.service.id));
@@ -154,11 +231,12 @@ function renderServices() {
 }
 
 function renderPros() {
-  setStep(2);
-  const pros = state.config.professionals.filter(p => p.services.includes(state.service.id));
-  $app.innerHTML = `<h2>Com quem?</h2><div class="list">${pros.map(p => `
-    <button class="item" data-id="${esc(p.id)}"><span>${esc(p.name)}<small>${esc(p.role)}</small></span><span class="tag">→</span></button>`).join('')}</div>`;
-  $app.prepend(backBtn(renderServices));
+  const c = state.config;
+  const pros = c.professionals.filter(p => p.services.includes(state.service.id));
+  show(`<h2>Com quem? 🙌</h2><div class="list">${pros.map(p => `
+    <button class="item" data-id="${esc(p.id)}" style="--c:${colorOf(c.professionals, p.id)}">
+      ${proAvatar(p)}<span class="txt">${esc(p.name)}<small>${esc(p.role)}</small></span><span class="pill">→</span>
+    </button>`).join('')}</div>`, 2, renderServices);
   $app.querySelectorAll('.item').forEach(b => b.onclick = () => {
     state.pro = pros.find(p => p.id === b.dataset.id);
     renderDate();
@@ -166,7 +244,6 @@ function renderPros() {
 }
 
 function renderDate() {
-  setStep(3);
   const days = [];
   const today = new Date(); today.setHours(0, 0, 0, 0);
   for (let i = 0; i < state.config.maxDays && days.length < 30; i++) {
@@ -175,13 +252,13 @@ function renderDate() {
   }
   const wd = new Intl.DateTimeFormat('pt-PT', { weekday: 'short' });
   const mo = new Intl.DateTimeFormat('pt-PT', { month: 'short' });
-  $app.innerHTML = `<h2>Dia e hora</h2>
-    <div class="summary">${esc(state.service.name)} · ${esc(state.pro.name)}</div>
+  const pros = state.config.professionals.filter(p => p.services.includes(state.service.id));
+  show(`<h2>Quando dá jeito? 🗓️</h2>
+    <div class="summary">${svcIcon(state.service)}<div><b>${esc(state.service.name)}</b><small>com ${esc(state.pro.name)} · ${esc(state.service.duration)} min</small></div></div>
     <div class="days">${days.map(d => `<button class="day" data-date="${isoDate(d)}">
       <small>${wd.format(d).replace('.', '')}</small><b>${d.getDate()}</b><small>${mo.format(d).replace('.', '')}</small></button>`).join('')}</div>
-    <div id="times"><p class="note">${days.length ? 'Escolhe um dia.' : 'Sem dias disponíveis.'}</p></div>`;
-  const pros = state.config.professionals.filter(p => p.services.includes(state.service.id));
-  $app.prepend(backBtn(pros.length > 1 ? renderPros : renderServices));
+    <div id="times"><p class="note">${days.length ? 'Escolhe um dia.' : 'Sem dias disponíveis 😕'}</p></div>`,
+    3, pros.length > 1 ? renderPros : renderServices);
   $app.querySelectorAll('.day').forEach(b => b.onclick = () => {
     $app.querySelectorAll('.day').forEach(x => x.classList.toggle('sel', x === b));
     state.date = b.dataset.date;
@@ -194,13 +271,13 @@ function renderDate() {
 async function loadTimes() {
   const box = document.getElementById('times');
   const date = state.date;
-  box.innerHTML = '<div class="spinner"></div>';
+  box.innerHTML = SPINNER;
   try {
     const { slots } = await api({ action: 'slots', pro: state.pro.id, service: state.service.id, date });
     if (date !== state.date) return; // o utilizador entretanto mudou de dia
     box.innerHTML = slots.length
-      ? `<p class="note" style="padding:4px 0 0">${esc(fmtLong(date))}</p><div class="times">${slots.map(t => `<button class="time">${esc(t)}</button>`).join('')}</div>`
-      : `<p class="note">Sem horários livres neste dia. Experimenta outro.</p>`;
+      ? `<p class="when">${esc(fmtLong(date))}</p><div class="times">${slots.map(t => `<button class="time">${esc(t)}</button>`).join('')}</div>`
+      : `<p class="note">Este dia está cheio 😅 Experimenta outro.</p>`;
     box.querySelectorAll('.time').forEach(b => b.onclick = () => { state.time = b.textContent; renderForm(); });
   } catch (e) {
     box.innerHTML = `<p class="error">${esc(e.message)}</p>`;
@@ -208,19 +285,18 @@ async function loadTimes() {
 }
 
 function renderForm() {
-  setStep(4);
-  $app.innerHTML = `<h2>Os teus dados</h2>
-    <div class="summary"><b>${esc(state.service.name)}</b> com ${esc(state.pro.name)}<br>${esc(fmtLong(state.date))} às ${esc(state.time)}</div>
-    <form id="f" novalidate>
-      <label for="name">Nome</label><input id="name" name="name" autocomplete="name" required maxlength="80">
+  show(`<h2>Quase lá! 🎉</h2>
+    <div class="summary">${svcIcon(state.service)}<div><b>${esc(state.service.name)} com ${esc(state.pro.name)}</b>
+      <small>${esc(fmtLong(state.date))} às ${esc(state.time)}</small></div></div>
+    <form id="f" class="formcard" novalidate>
+      <label for="name">O teu nome</label><input id="name" name="name" autocomplete="name" required maxlength="80">
       <label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="120">
       <label for="phone">Telemóvel</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
-      <label for="notes">Notas (opcional)</label><textarea id="notes" name="notes" rows="3" maxlength="500"></textarea>
+      <label for="notes">Alguma nota? (opcional)</label><textarea id="notes" name="notes" rows="3" maxlength="500"></textarea>
       <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="primary" type="submit">Pedir marcação</button>
       <p class="error" id="err" hidden></p>
-    </form>`;
-  $app.prepend(backBtn(renderDate));
+    </form>`, 4, renderDate);
   const f = document.getElementById('f');
   f.onsubmit = async ev => {
     ev.preventDefault();
@@ -243,17 +319,38 @@ function renderForm() {
 }
 
 function renderDone(data, confirmed) {
-  setStep(4);
-  $app.innerHTML = confirmed ? `<div class="done"><div class="icon">✅</div>
-    <h2>Marcação confirmada!</h2>
-    <p>${esc(state.service.name)} com ${esc(state.pro.name)}<br><b>${esc(fmtLong(state.date))} às ${esc(state.time)}</b></p>
-    <p class="note">Enviámos a confirmação para <b>${esc(data.email)}</b>, com um botão para o Google Calendar e um ficheiro para o calendário do iPhone.</p>
-    <button class="primary" id="again">Fazer outra marcação</button></div>` : `<div class="done"><div class="icon">📩</div>
-    <h2>Pedido enviado!</h2>
-    <p>${esc(state.service.name)} com ${esc(state.pro.name)}<br><b>${esc(fmtLong(state.date))} às ${esc(state.time)}</b></p>
-    <p class="note">O horário fica reservado enquanto o estúdio confirma. Vais receber a confirmação em <b>${esc(data.email)}</b>, com um botão para o Google Calendar e um ficheiro para o calendário do iPhone.</p>
-    <button class="primary" id="again">Fazer outra marcação</button></div>`;
+  show(`<div class="done">
+    <span class="big">${confirmed ? '🎉' : '💌'}</span>
+    <h2>${confirmed ? 'Está marcado!' : 'Pedido enviado!'}</h2>
+    <div class="ticket">${esc(state.service.name)} com ${esc(state.pro.name)}
+      <b>${esc(fmtLong(state.date))} às ${esc(state.time)}</b></div>
+    <p class="note">${confirmed
+      ? `Enviámos a confirmação para <b>${esc(data.email)}</b>, com um botão para o Google Calendar e um ficheiro para o calendário do iPhone.`
+      : `O horário fica guardado para ti enquanto o estúdio confirma. Vais receber a confirmação em <b>${esc(data.email)}</b>.`}</p>
+    <button class="primary alt" id="again">Fazer outra marcação</button></div>`, 4);
+  document.querySelectorAll('#steps span').forEach(s => s.classList.add('on'));
   document.getElementById('again').onclick = () => { Object.assign(state, { service: null, pro: null, date: null, time: null }); renderServices(); };
+  confetti();
+}
+
+/* ---------- confetti (leve, sem bibliotecas) ---------- */
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.createElement('canvas'); cv.id = 'confetti'; document.body.appendChild(cv);
+  const ctx = cv.getContext('2d'); const dpr = devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.scale(dpr, dpr);
+  const cols = ['#ff5c5c', '#ffb703', '#18b8a5', '#3d8bff', '#a35cff', '#ff7a45'];
+  const ps = Array.from({ length: 120 }, () => ({ x: innerWidth / 2, y: innerHeight * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 13 - 4,
+    s: 6 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .3, c: cols[Math.floor(Math.random() * cols.length)], round: Math.random() < .4 }));
+  let t = 0;
+  (function frame() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ps.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.s / 2, 0, 7); ctx.fill(); } else ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+      ctx.restore(); });
+    if (++t < 160) requestAnimationFrame(frame); else cv.remove();
+  })();
 }
 
 /* ---------- Arranque ---------- */
@@ -262,7 +359,7 @@ function renderDone(data, confirmed) {
   try {
     state.config = await api({ action: 'config' });
     document.getElementById('studio').textContent = state.config.studio;
-    document.getElementById('address').textContent = state.config.address || '';
+    document.getElementById('address').textContent = state.config.address ? '📍 ' + state.config.address : '';
     document.title = 'Marcações · ' + state.config.studio;
     renderServices();
   } catch (e) {
