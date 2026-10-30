@@ -161,6 +161,28 @@
   @keyframes bounce { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
   @keyframes wiggle { 0%, 88%, 100% { transform: rotate(0); } 92% { transform: rotate(-10deg); } 96% { transform: rotate(10deg); } }
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+
+  /* ---------- toque e app ---------- */
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overscroll-behavior-y: none; }
+  body { -webkit-tap-highlight-color: transparent; }
+  button, .chip { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  .view { animation: fadeIn .2s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @media (max-width: 600px) {
+    body { background: var(--bg); }
+    .wrap { padding-top: 0; }
+    header { position: sticky; top: 0; z-index: 10; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left))) 0;
+      border-radius: 0; padding: max(10px, env(safe-area-inset-top)) 16px 10px; box-shadow: 0 1px 0 var(--line); }
+    header .logo-img { width: 40px; height: 40px; border-radius: 13px; box-shadow: none; }
+    header h1 { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    header p { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .install { padding: 7px 11px; font-size: 13px; }
+    .item, .day, .time, .summary, .formcard, .done, .back { box-shadow: 0 1px 0 var(--line), 0 1px 3px rgba(0, 0, 0, .04); }
+    .item:hover { transform: none; }
+    .item:active { transform: scale(.985); box-shadow: 0 1px 0 var(--line); }
+    .install-tip { margin-top: 10px; }
+  }
 </style>
 </head>
 <body>

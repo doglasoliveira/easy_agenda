@@ -99,7 +99,7 @@
   .tabs button.on { background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-dark); }
   .tabs .count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 10px; background: var(--c4); color: #3a2a00;
     font-size: 12px; font-weight: 900; text-align: center; line-height: 20px; animation: pulse 2s ease-in-out infinite; }
-  main { max-width: 1120px; margin: 0 auto; padding: 12px 16px 80px; display: grid; gap: 16px; animation: pop .35s cubic-bezier(.34, 1.56, .64, 1); }
+  main { max-width: 1120px; margin: 0 auto; padding: 12px 16px 80px; display: grid; gap: 16px; }
   .demo { background: var(--warn-soft); color: var(--warn); text-align: center; font-size: 13px; font-weight: 800; padding: 8px 16px; }
 
   .card { background: var(--card); border-radius: 24px; padding: 20px; min-width: 0; box-shadow: var(--shadow); }
@@ -111,7 +111,7 @@
   input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 14px; border: 3px solid var(--line); background: var(--soft); color: var(--ink);
     font-size: 15px; font-weight: 700; min-width: 0; transition: border-color .15s, background .15s; }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c3); background: var(--card); }
-  input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 0; accent-color: var(--accent); }
   .field label.check { font-weight: 700; color: var(--ink); font-size: 15px; }
   .check { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
   .checks { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0; }
@@ -279,6 +279,73 @@
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
   @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0); } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  /* ---------- toque e app ---------- */
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overscroll-behavior-y: none; }
+  body { -webkit-tap-highlight-color: transparent; }
+  button, .tabs, .seg label, .chip, .check { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  input, select, textarea { font-size: 16px; }              /* 16px evita o zoom automático do iPhone ao tocar */
+  .seg label { position: relative; }
+  .seg input { width: 1px; height: 1px; margin: 0; }        /* o rádio escondido não pode alargar a página */
+  .tabs button { display: inline-flex; align-items: center; gap: 6px; }
+  .tabs .ts { display: none; }
+  main { animation: fadeIn .18s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+
+  @media (max-width: 720px) {
+    body { background: var(--bg); }
+    /* barra de topo fixa */
+    #shell .top { position: sticky; top: 0; z-index: 15; max-width: none; margin: 0; padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+      background: var(--card); box-shadow: 0 1px 0 var(--line); }
+    .top .logo-img { width: 36px; height: 36px; border-radius: 12px; box-shadow: none; }
+    .top h1 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; display: block; }
+    .brand > div { min-width: 0; }
+    .who { display: block; font-size: 12px; }
+    #siteLink { display: none; }
+    .top-actions .install { padding: 7px 11px; font-size: 13px; }
+    /* separadores em baixo, como numa app */
+    .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; max-width: none; margin: 0; gap: 0; overflow: visible;
+      display: grid; grid-template-columns: repeat(6, 1fr); padding: 6px 4px max(6px, env(safe-area-inset-bottom));
+      background: var(--card); box-shadow: 0 -1px 0 var(--line); }
+    .tabs button { position: relative; flex-direction: column; gap: 2px; padding: 4px 0; border-radius: 0; background: none; box-shadow: none;
+      font-size: 10.5px; font-weight: 800; color: var(--muted); min-width: 0; }
+    .tabs button:active { transform: none; box-shadow: none; }
+    .tabs .ti { font-size: 20px; line-height: 30px; width: 52px; border-radius: 15px; transition: background .2s; }
+    .tabs .tl { display: none; }
+    .tabs .ts { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .tabs button.on { background: none; box-shadow: none; color: var(--accent); }
+    .tabs button.on .ti { background: var(--accent-soft); }
+    .tabs .count { position: absolute; top: 0; left: 50%; margin-left: 8px; animation: none; min-width: 18px; line-height: 18px; font-size: 11px; padding: 0 5px; }
+    main { padding: 14px 12px calc(86px + env(safe-area-inset-bottom)); gap: 12px; }
+    h2 { font-size: 21px; }
+    /* cartões mais assentes (sem efeito de flutuar) */
+    .card, .kpi { border-radius: 18px; box-shadow: 0 1px 0 var(--line), 0 1px 3px rgba(0, 0, 0, .04); }
+    .card { padding: 16px; }
+    .table-wrap { margin: 0 -16px; padding: 0 16px; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .kpi b { font-size: 22px; }
+    .two { grid-template-columns: minmax(0, 1fr); }
+    .cards { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .grid2, .grid-auto { grid-template-columns: minmax(0, 1fr); }
+    #setForm .grid-auto, #blkForm .grid-auto, .card > .grid-auto { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); justify-self: stretch; }
+    .seg label { justify-content: center; padding: 9px 4px; font-size: 13px; text-align: center; }
+    .inline input { flex: 1 1 100% !important; }
+    .inline .btn { width: 100%; }
+    .user-row { flex-wrap: wrap; }
+    .user-row .info { flex: 1 1 60%; }
+    .bar-row { grid-template-columns: minmax(70px, 100px) 1fr auto; }
+    /* janelas de edição sobem de baixo (como nas apps) */
+    dialog:not(.pop):not(.busy) { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: 26px 26px 0 0; max-height: 92vh; }
+    dialog:not(.pop):not(.busy)[open] { animation: sheetUp .3s cubic-bezier(.2, .9, .3, 1); }
+    dialog:not(.pop):not(.busy) form { padding: 22px 18px max(18px, env(safe-area-inset-bottom)); }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+    .notices { top: calc(max(10px, env(safe-area-inset-top)) + 64px); right: 10px; width: calc(100vw - 20px); }
+    .login { padding: max(16px, env(safe-area-inset-top)) 14px 16px; align-items: start; }
+    .login form { margin-top: 6vh; box-shadow: 0 1px 0 var(--line), 0 1px 3px rgba(0, 0, 0, .04); }
+  }
 </style>
 </head>
 <body>
@@ -308,13 +375,13 @@
     <div class="top-actions"><button id="installBtn" class="install" hidden>📲 Instalar</button><button class="btn sm" id="logout">Sair</button></div>
   </header>
   <div style="max-width:1120px;margin:-6px auto 8px;padding:0 16px"><div id="installTip" class="install-tip" hidden>📲 No iPhone ou iPad: toca em <b>Partilhar</b> (o quadrado com a seta ⬆️) e depois em <b>Adicionar ao ecrã principal</b>.</div></div>
-  <nav class="tabs" id="tabs">
-    <button data-tab="reports">📊 Relatórios</button>
-    <button data-tab="bookings">🗓️ Marcações <span class="count" id="pendingCount" hidden></span></button>
-    <button data-tab="pros">🙋 Profissionais</button>
-    <button data-tab="services">✨ Serviços</button>
-    <button data-tab="blocks">🏖️ Folgas</button>
-    <button data-tab="settings">⚙️ Definições</button>
+  <nav class="tabs" id="tabs" aria-label="Secções">
+    <button data-tab="reports"><span class="ti" aria-hidden="true">📊</span><span class="tl">Relatórios</span><span class="ts">Relatórios</span></button>
+    <button data-tab="bookings"><span class="ti" aria-hidden="true">🗓️</span><span class="tl">Marcações</span><span class="ts">Marcações</span> <span class="count" id="pendingCount" hidden></span></button>
+    <button data-tab="pros"><span class="ti" aria-hidden="true">🙋</span><span class="tl">Profissionais</span><span class="ts">Equipa</span></button>
+    <button data-tab="services"><span class="ti" aria-hidden="true">✨</span><span class="tl">Serviços</span><span class="ts">Serviços</span></button>
+    <button data-tab="blocks"><span class="ti" aria-hidden="true">🏖️</span><span class="tl">Folgas</span><span class="ts">Folgas</span></button>
+    <button data-tab="settings"><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Definições</span><span class="ts">Definições</span></button>
   </nav>
   <main id="view"></main>
 </div>
@@ -1334,7 +1401,7 @@ function renderSettings(el) {
         <div class="field" style="align-self:end"><button class="btn" type="submit">Alterar senha</button></div>
       </form>
     </section>
-    <section class="card"><h3>👥 Equipa do painel</h3>
+    <section class="card"><h3>👥 Acessos ao painel</h3>
       <p class="muted small" style="margin:-4px 0 12px">Convida quem também gere as marcações (receção, sócios…). Cada pessoa entra com o seu e-mail e a sua senha.</p>
       <div id="users"><div class="dots"><i></i><i></i><i></i></div></div>
       <form id="inviteForm" class="inline" style="margin-top:14px" novalidate>
