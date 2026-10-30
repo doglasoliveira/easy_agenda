@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Painel do Estúdio</title>
+<script>
+  /* aplica o tema guardado antes de desenhar a página (evita o "piscar") */
+  try { const t = localStorage.getItem('easy_agenda_theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
@@ -17,12 +21,18 @@
     --info: #2f6fdc; --info-soft: #e2edff; --err: #e5383b; --err-soft: #ffe3e3; --grey-soft: #eceff6;
     --shadow: 0 5px 0 rgba(43, 45, 66, .06), 0 10px 26px rgba(43, 45, 66, .07);
   }
+  :root { color-scheme: light dark; }
+  :root[data-theme="light"] { color-scheme: light; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950; --soft: #1f2232;
+    :root:not([data-theme="light"]) { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950; --soft: #1f2232;
       --accent-soft: #3d2730; --ok: #4fd6a5; --ok-soft: #173a2f; --warn: #ffcc4d; --warn-soft: #3b3115;
       --info: #8db4ff; --info-soft: #1d2a48; --err: #ff7b7d; --err-soft: #432126; --grey-soft: #30344a;
       --shadow: 0 5px 0 rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .25); }
   }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950; --soft: #1f2232;
+      --accent-soft: #3d2730; --ok: #4fd6a5; --ok-soft: #173a2f; --warn: #ffcc4d; --warn-soft: #3b3115;
+      --info: #8db4ff; --info-soft: #1d2a48; --err: #ff7b7d; --err-soft: #432126; --grey-soft: #30344a;
+      --shadow: 0 5px 0 rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .25); }
   * { box-sizing: border-box; }
   body { margin: 0; color: var(--ink); font: 600 15px/1.45 "Nunito", system-ui, sans-serif;
     background: var(--bg) radial-gradient(var(--dot) 2px, transparent 2.5px) 0 0 / 22px 22px; min-height: 100vh; }
@@ -163,6 +173,11 @@
   .hours-edit { display: grid; gap: 8px; }
   .hours-edit .hr { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: center; }
   .hours-edit .hr span { font-size: 14px; font-weight: 800; }
+  .seg { display: inline-flex; justify-self: start; gap: 6px; background: var(--soft); border: 3px solid var(--line); border-radius: 18px; padding: 4px; flex-wrap: wrap; }
+  .seg label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 13px; cursor: pointer; font-weight: 800; color: var(--muted); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label:has(input:checked) { background: var(--accent); color: #fff; box-shadow: 0 3px 0 var(--accent-dark); }
+  .seg label:has(input:focus-visible) { outline: 3px solid var(--c3); outline-offset: 2px; }
   .emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; }
   .emoji-pick button { width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--line); background: var(--soft); font-size: 20px; cursor: pointer; }
   .emoji-pick button.on { border-color: var(--accent); background: var(--accent-soft); }
@@ -350,7 +365,13 @@ async function loadAll() {
   render();
   refreshPendingCount();
 }
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme;
+  try { if (t === 'light' || t === 'dark') localStorage.setItem('easy_agenda_theme', t); else localStorage.removeItem('easy_agenda_theme'); } catch (e) {}
+}
 function applyHeader() {
+  applyTheme(DATA.settings.theme);
   $('#studioName').textContent = DATA.settings.studioName;
   document.title = 'Painel · ' + DATA.settings.studioName;
   const link = $('#siteLink');
@@ -874,6 +895,11 @@ function renderSettings(el) {
           <div class="field"><label>Marcar até (dias)</label><input name="maxDaysAhead" type="number" min="1" max="365" value="${s.maxDaysAhead}"></div>
           <div class="field"><label>Moeda</label><select name="currency">${['EUR', 'BRL', 'USD', 'GBP'].map(c => `<option ${s.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
         </div>
+        <div class="field"><span class="lbl">Tema (site de marcações e painel)</span>
+          <div class="seg" role="radiogroup" aria-label="Tema">
+            ${[['system', '🖥️ Sistema'], ['light', '☀️ Claro'], ['dark', '🌙 Escuro']].map(([v, l]) => `<label><input type="radio" name="theme" value="${v}" ${(s.theme || 'system') === v ? 'checked' : ''}> ${l}</label>`).join('')}
+          </div>
+          <span class="muted small">"Sistema" segue o modo claro/escuro do telemóvel ou computador de cada pessoa.</span></div>
         <label class="check"><input type="checkbox" name="autoConfirm" ${s.autoConfirm ? 'checked' : ''}> Confirmar marcações online automaticamente (sem aprovação)</label>
         <div><button class="btn primary" type="submit">Guardar definições</button></div>
       </form>
@@ -886,6 +912,7 @@ function renderSettings(el) {
       </form>
     </section>`;
 
+  $$('#setForm input[name=theme]').forEach(r => (r.onchange = () => applyTheme(r.value)));
   $('#setForm').onsubmit = async e => {
     e.preventDefault();
     const f = e.target, btn = f.querySelector('button'); btn.disabled = true;
@@ -893,7 +920,7 @@ function renderSettings(el) {
       const r = await call('saveSettings', { settings: {
         studioName: f.studioName.value, address: f.address.value, adminEmail: f.adminEmail.value.trim(), siteUrl: f.siteUrl.value.trim(),
         slotStep: +f.slotStep.value, minNoticeHours: +f.minNoticeHours.value, maxDaysAhead: +f.maxDaysAhead.value,
-        currency: f.currency.value, autoConfirm: f.autoConfirm.checked } });
+        currency: f.currency.value, theme: f.theme.value, autoConfirm: f.autoConfirm.checked } });
       DATA.settings = r.settings; applyHeader(); toast('Definições guardadas.');
     } catch (ex) { toast(ex.message, true); }
     finally { btn.disabled = false; }
@@ -913,7 +940,7 @@ function renderSettings(el) {
 /* Só é usado quando API_URL está vazio: simula o Apps Script com dados fictícios em memória. */
 const demo = (() => {
   const settings = { studioName: 'Estúdio Exemplo', address: 'Rua Exemplo 123, Lisboa', adminEmail: '', currency: 'EUR',
-    slotStep: 15, minNoticeHours: 2, maxDaysAhead: 60, autoConfirm: false, siteUrl: '' };
+    slotStep: 15, minNoticeHours: 2, maxDaysAhead: 60, autoConfirm: false, siteUrl: '', theme: 'system' };
   const services = [
     { id: 'manicure', name: 'Manicure', duration: 45, price: 15, description: 'Limpeza, cutículas e verniz.', active: true },
     { id: 'gel', name: 'Unhas de gel', duration: 90, price: 35, description: 'Aplicação ou manutenção.', active: true },

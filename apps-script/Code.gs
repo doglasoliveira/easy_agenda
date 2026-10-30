@@ -22,6 +22,7 @@ const DEFAULTS = {
     maxDaysAhead: 60,        // até quantos dias à frente se pode marcar
     autoConfirm: false,      // true = marcações online confirmadas sem aprovação
     siteUrl: '',             // link do site de marcações (para aparecer no painel)
+    theme: 'system',         // 'system' | 'light' | 'dark'
   },
   services: [
     { id: 'manicure', name: 'Manicure', duration: 45, price: 15, description: 'Limpeza, cutículas e verniz.', active: true },
@@ -202,6 +203,7 @@ function saveSettings_(s) {
     maxDaysAhead: clampInt_(s.maxDaysAhead, 1, 365, cur.maxDaysAhead),
     autoConfirm: !!s.autoConfirm,
     siteUrl: clean_(s.siteUrl, 200),
+    theme: ['system', 'light', 'dark'].indexOf(s.theme) > -1 ? s.theme : 'system',
   };
   if (next.adminEmail && !EMAIL_RE.test(next.adminEmail)) throw new Error('E-mail de notificações inválido.');
   setStore_('settings', next);
@@ -468,7 +470,7 @@ function publicConfig_() {
   const offered = svcs.filter(s => pros.some(p => p.services.indexOf(s.id) > -1));
   return {
     studio: st.studioName, address: st.address, currency: st.currency, timeZone: tz_(),
-    maxDays: st.maxDaysAhead, autoConfirm: !!st.autoConfirm, closedDates: closed_(),
+    maxDays: st.maxDaysAhead, autoConfirm: !!st.autoConfirm, closedDates: closed_(), theme: st.theme || 'system',
     services: offered.map(s => ({ id: s.id, name: s.name, duration: s.duration, price: s.price, description: s.description, icon: s.icon || '' })),
     professionals: pros,
   };

@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marcações</title>
+<script>
+  /* aplica o tema guardado antes de desenhar a página (evita o "piscar") */
+  try { const t = localStorage.getItem('easy_agenda_theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
@@ -14,10 +18,14 @@
     --c1: #ff7a45; --c2: #18b8a5; --c3: #3d8bff; --c4: #ffb703; --c5: #a35cff; --c6: #ff4d8d;
     --ok: #12a37a; --err: #e5383b; --shadow: 0 6px 0 rgba(43, 45, 66, .06), 0 10px 28px rgba(43, 45, 66, .08);
   }
+  :root { color-scheme: light dark; }
+  :root[data-theme="light"] { color-scheme: light; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950;
+    :root:not([data-theme="light"]) { --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950;
       --brand-soft: #3d2730; --shadow: 0 6px 0 rgba(0, 0, 0, .25), 0 10px 28px rgba(0, 0, 0, .25); }
   }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #1b1d2b; --dot: #25283a; --card: #262939; --ink: #f2f3fa; --muted: #a3a8c3; --line: #353950;
+      --brand-soft: #3d2730; --shadow: 0 6px 0 rgba(0, 0, 0, .25), 0 10px 28px rgba(0, 0, 0, .25); }
   * { box-sizing: border-box; }
   body { margin: 0; color: var(--ink); font: 600 16px/1.45 "Nunito", system-ui, sans-serif;
     background: var(--bg) radial-gradient(var(--dot) 2px, transparent 2.5px) 0 0 / 22px 22px; min-height: 100vh; }
@@ -179,7 +187,7 @@ async function postBooking(data) {
 
 /* ---------- Dados de demonstração (só quando API_URL está vazio) ---------- */
 const DEMO = {
-  studio: 'Estúdio Exemplo', address: 'Rua Exemplo 123, Lisboa', timeZone: 'Europe/Lisbon', maxDays: 30, currency: 'EUR', closedDates: [],
+  studio: 'Estúdio Exemplo', address: 'Rua Exemplo 123, Lisboa', timeZone: 'Europe/Lisbon', maxDays: 30, currency: 'EUR', closedDates: [], theme: 'system',
   services: [
     { id: 'manicure', name: 'Manicure', duration: 45, price: 15, description: 'Limpeza, cutículas e verniz.' },
     { id: 'gel', name: 'Unhas de gel', duration: 90, price: 35, description: 'Aplicação ou manutenção.' },
@@ -353,11 +361,19 @@ function confetti() {
   })();
 }
 
+/* ---------- tema (definido pelo estúdio no painel) ---------- */
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme;
+  try { if (t === 'light' || t === 'dark') localStorage.setItem('easy_agenda_theme', t); else localStorage.removeItem('easy_agenda_theme'); } catch (e) {}
+}
+
 /* ---------- Arranque ---------- */
 (async () => {
   document.getElementById('demo').hidden = !!API_URL;
   try {
     state.config = await api({ action: 'config' });
+    applyTheme(state.config.theme);
     document.getElementById('studio').textContent = state.config.studio;
     document.getElementById('address').textContent = state.config.address ? '📍 ' + state.config.address : '';
     document.title = 'Marcações · ' + state.config.studio;
