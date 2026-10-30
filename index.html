@@ -133,6 +133,16 @@
   .spinner i { width: 14px; height: 14px; border-radius: 50%; background: var(--brand); animation: hop .9s ease-in-out infinite; }
   .spinner i:nth-child(2) { background: var(--c4); animation-delay: .15s; }
   .spinner i:nth-child(3) { background: var(--c2); animation-delay: .3s; }
+  .pop { border: 0; border-radius: 30px; padding: 26px 22px 20px; width: min(380px, calc(100vw - 32px)); text-align: center; background: var(--card); color: var(--ink);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, .08), 0 30px 60px rgba(0, 0, 0, .25); }
+  .pop[open] { animation: popIn .35s cubic-bezier(.34, 1.56, .64, 1); }
+  .pop::backdrop { background: rgba(27, 29, 43, .5); }
+  .pop .pop-ico { width: 76px; height: 76px; margin: 0 auto 12px; border-radius: 24px; display: grid; place-items: center; font-size: 40px;
+    background: var(--c4); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .15); animation: bounce .5s cubic-bezier(.34, 1.56, .64, 1); }
+  .pop h3 { font-size: 22px; font-weight: 900; margin: 0 0 6px; }
+  .pop p { margin: 0; color: var(--muted); font-size: 15px; }
+  .pop .primary { margin-top: 20px; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
 
   @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -337,7 +347,9 @@ function renderForm() {
       renderDone(data, res.status === 'confirmed');
     } catch (e) {
       btn.disabled = false; btn.textContent = 'Pedir marcação';
-      showErr(e.message);
+      const taken = /ocupad|dispon/i.test(e.message);
+      popup(taken ? '⏰' : '😬', taken ? 'Alguém foi mais rápido!' : 'Ups!', taken ? 'Este horário acabou de ser marcado. Escolhe outro, por favor.' : e.message,
+        taken ? renderDate : null, taken ? 'Escolher outro horário' : 'Percebi');
     }
     function showErr(m) { err.textContent = m; err.hidden = false; }
   };
@@ -356,6 +368,18 @@ function renderDone(data, confirmed) {
   document.querySelectorAll('#steps span').forEach(s => s.classList.add('on'));
   document.getElementById('again').onclick = () => { Object.assign(state, { service: null, pro: null, date: null, time: null }); renderServices(); };
   confetti();
+}
+
+/* ---------- popup no estilo do app ---------- */
+function popup(icon, title, text, onClose, okLabel = 'Percebi') {
+  const d = document.getElementById('pop');
+  document.getElementById('popOk').textContent = okLabel;
+  d.onclose = () => { if (onClose) onClose(); };
+  document.getElementById('popIco').textContent = icon;
+  document.getElementById('popTitle').textContent = title;
+  document.getElementById('popText').textContent = text;
+  document.getElementById('popOk').onclick = () => d.close();
+  if (!d.open) d.showModal();
 }
 
 /* ---------- confetti (leve, sem bibliotecas) ---------- */
@@ -402,6 +426,12 @@ function applyTheme(t) {
   }
 })();
 </script>
+<dialog id="pop" class="pop" aria-labelledby="popTitle" aria-describedby="popText">
+  <div class="pop-ico" id="popIco" aria-hidden="true">😬</div>
+  <h3 id="popTitle">Ups!</h3>
+  <p id="popText"></p>
+  <button class="primary" type="button" id="popOk">Percebi</button>
+</dialog>
 <script src="pwa.js" defer></script>
 </body>
 </html>

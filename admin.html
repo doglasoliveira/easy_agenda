@@ -207,6 +207,21 @@
   dialog h3 { font-size: 21px; margin: 0; }
   .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+  .pop { width: min(400px, calc(100vw - 32px)); text-align: center; padding: 26px 22px 20px; }
+  .pop[open] { animation: popIn .35s cubic-bezier(.34, 1.56, .64, 1); }
+  .pop-ico { width: 76px; height: 76px; margin: 0 auto 12px; border-radius: 24px; display: grid; place-items: center; font-size: 40px;
+    background: var(--c3); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .15); animation: bounceIn .5s cubic-bezier(.34, 1.56, .64, 1); }
+  .pop.danger .pop-ico { background: var(--accent); }
+  .pop.error .pop-ico { background: var(--c4); }
+  .pop.ok .pop-ico { background: var(--c2); }
+  .pop h3 { font-size: 22px; margin: 0 0 6px; }
+  .pop p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; white-space: pre-line; }
+  .pop-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .pop-actions .btn { flex: 1; padding: 12px; font-size: 16px; }
+  .pop.danger .pop-actions .btn.primary { background: var(--err); box-shadow: 0 4px 0 #a8262a; }
+  .pop.danger .pop-actions .btn.primary:active { box-shadow: 0 1px 0 #a8262a; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes bounceIn { 0% { transform: scale(0) rotate(-15deg); } 70% { transform: scale(1.15) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
   .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 16px;
     font-size: 15px; font-weight: 800; max-width: calc(100vw - 32px); box-shadow: 0 6px 0 rgba(0, 0, 0, .15); z-index: 10; animation: toastIn .35s cubic-bezier(.34, 1.56, .64, 1); }
   .toast.bad { background: var(--err); color: #fff; }
@@ -264,6 +279,12 @@
 
 <dialog id="dlg"><form id="dlgForm" novalidate></form></dialog>
 <div id="toast" class="toast" hidden></div>
+<dialog id="pop" class="pop" aria-labelledby="popTitle" aria-describedby="popText">
+  <div class="pop-ico" id="popIco" aria-hidden="true"></div>
+  <h3 id="popTitle"></h3>
+  <p id="popText"></p>
+  <div class="pop-actions"><button type="button" class="btn" id="popCancel">Cancelar</button><button type="button" class="btn primary" id="popOk">OK</button></div>
+</dialog>
 
 <script>
 /* ======== CONFIGURAÇÃO: o mesmo URL do Apps Script usado no index.html (termina em /exec) ======== */
@@ -314,7 +335,32 @@ const iconOf = s => s.icon || (ICONS.find(([re]) => re.test(s.name + ' ' + (s.de
 const initials = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 const svcIco = s => `<span class="svc-ico" style="background:${colorOf(DATA.services, s.id)}">${iconOf(s)}</span>`;
 
+/* Popup no estilo do app (substitui alert/confirm do navegador). Devolve true se carregar no botão principal. */
+function popup({ icon = '💬', title = '', text = '', ok = 'OK', cancel = null, kind = '' } = {}) {
+  const d = $('#pop');
+  if (d.open) d.close('false');
+  d.className = 'pop ' + kind;
+  $('#popIco').textContent = icon;
+  $('#popTitle').textContent = title;
+  $('#popText').textContent = text;
+  $('#popOk').textContent = ok;
+  const c = $('#popCancel');
+  c.hidden = !cancel; c.textContent = cancel || '';
+  return new Promise(resolve => {
+    $('#popOk').onclick = () => d.close('true');
+    c.onclick = () => d.close('false');
+    d.onclose = () => resolve(d.returnValue === 'true');
+    d.returnValue = 'false';
+    d.showModal();
+    setTimeout(() => (cancel ? c : $('#popOk')).focus(), 30);
+  });
+}
+const ask = (title, text, { icon = '🤔', ok = 'Sim', cancel = 'Cancelar', danger = false } = {}) =>
+  popup({ icon, title, text, ok, cancel, kind: danger ? 'danger' : '' });
+const oops = text => popup({ icon: '😬', title: 'Ups!', text, ok: 'Percebi', kind: 'error' });
+
 function toast(msg, bad) {
+  if (bad) return oops(msg);
   const t = $('#toast');
   t.textContent = msg; t.className = 'toast' + (bad ? ' bad' : ''); t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), bad ? 5000 : 2800);
@@ -634,8 +680,8 @@ async function onBookingAction(e) {
   if (!b) return;
   const { act, id, pro, name } = b.dataset;
   const status = { approve: 'confirmed', reject: 'rejected', cancel: 'cancelled', noshow: 'noshow', undo: 'confirmed' }[act];
-  if (act === 'reject' && !confirm(`Recusar o pedido de ${name}? O cliente é avisado por e-mail.`)) return;
-  if (act === 'cancel' && !confirm(`Cancelar a marcação de ${name}? O cliente é avisado por e-mail e o horário fica livre.`)) return;
+  if (act === 'reject' && !(await ask(`Recusar o pedido de ${name}?`, 'O cliente é avisado por e-mail e o horário fica livre.', { icon: '🙅', ok: 'Recusar', danger: true }))) return;
+  if (act === 'cancel' && !(await ask(`Cancelar a marcação de ${name}?`, 'O cliente é avisado por e-mail e o horário fica livre.', { icon: '🗓️', ok: 'Cancelar marcação', cancel: 'Voltar', danger: true }))) return;
   b.disabled = true;
   try {
     await call('setStatus', { pro, id, status });
@@ -755,13 +801,13 @@ function openProDialog(p = { services: [], hours: {}, active: true }) {
   }, { extraLeft: `${p.id ? '<button type="button" class="btn danger" id="dlgDelete">🗑️ Apagar</button>' : ''}` });
   const del = $('#dlgDelete', form);
   if (del) del.onclick = async () => {
-    if (!confirm(`Apagar ${p.name}?\n\nDeixa de aparecer no painel e no site. As marcações passadas continuam nos relatórios e o calendário dele no Google não é apagado.`)) return;
+    if (!(await ask(`Apagar ${p.name}?`, 'Deixa de aparecer no painel e no site. As marcações passadas continuam nos relatórios e o calendário no Google não é apagado.', { icon: '🗑️', ok: 'Apagar', danger: true }))) return;
     del.disabled = true;
     try {
       const r = await call('deletePro', { id: p.id });
       DATA.professionals = r.professionals;
       $('#dlg').close(); toast('Profissional apagado.'); render();
-    } catch (ex) { const e = $('#dlgErr'); e.textContent = ex.message; e.hidden = false; del.disabled = false; }
+    } catch (ex) { del.disabled = false; oops(ex.message); }
   };
 }
 
@@ -804,13 +850,13 @@ function openSvcDialog(s = { duration: 60, price: 0, active: true }) {
   }, { extraLeft: `${s.id ? '<button type="button" class="btn danger" id="dlgDelete">🗑️ Apagar</button>' : ''}` });
   const del = $('#dlgDelete', form);
   if (del) del.onclick = async () => {
-    if (!confirm(`Apagar o serviço "${s.name}"?\n\nÉ retirado de todos os profissionais e do site. As marcações passadas continuam nos relatórios.`)) return;
+    if (!(await ask(`Apagar "${s.name}"?`, 'O serviço é retirado de todos os profissionais e do site. As marcações passadas continuam nos relatórios.', { icon: '🗑️', ok: 'Apagar', danger: true }))) return;
     del.disabled = true;
     try {
       const r = await call('deleteService', { id: s.id });
       DATA.services = r.services; DATA.professionals = r.professionals;
       $('#dlg').close(); toast('Serviço apagado.'); render();
-    } catch (ex) { const e = $('#dlgErr'); e.textContent = ex.message; e.hidden = false; del.disabled = false; }
+    } catch (ex) { del.disabled = false; oops(ex.message); }
   };
   $$('.emoji-pick button', form).forEach(btn => (btn.onclick = () => {
     $$('.emoji-pick button', form).forEach(x => x.classList.toggle('on', x === btn));
@@ -880,7 +926,7 @@ function renderBlocks(el) {
   };
   $('#blkList').onclick = async e => {
     const b = e.target.closest('[data-del]'); if (!b) return;
-    if (!confirm('Apagar esta folga?')) return;
+    if (!(await ask('Apagar esta folga?', 'O horário volta a ficar disponível para marcações.', { icon: '🏖️', ok: 'Apagar', danger: true }))) return;
     b.disabled = true;
     try { await call('deleteBlock', { pro: b.dataset.pro, id: b.dataset.del }); toast('Folga apagada.'); loadBlocks(); }
     catch (ex) { toast(ex.message, true); b.disabled = false; }

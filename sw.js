@@ -4,7 +4,7 @@
  * - Pedidos ao Apps Script (marcações, horários, painel) NUNCA são guardados: vão sempre à rede.
  * Ao alterar ficheiros, muda a VERSION para forçar a atualização nos telemóveis.
  */
-const VERSION = 'easy-agenda-v2';
+const VERSION = 'easy-agenda-v3';
 const SHELL = [
   './', './index.html', './admin.html', './pwa.js', './manifest.webmanifest', './admin.webmanifest',
   './icons/app.svg', './icons/app-192.png', './icons/app-512.png', './icons/app-apple-180.png', './icons/app-32.png',
