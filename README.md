@@ -6,6 +6,7 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 |---|---|---|
 | `index.html` | Site onde os clientes marcam | GitHub Pages |
 | `admin.html` | **Painel do estúdio** (protegido por senha) | GitHub Pages |
+| `manifest.webmanifest`, `admin.webmanifest`, `sw.js`, `pwa.js`, `icons/` | Web app instalável (ícone, offline) | GitHub Pages |
 | `apps-script/Code.gs` + `apps-script/appsscript.json` | Backend: guarda os dados e liga ao Google Calendar | Google Apps Script (conta do estúdio) |
 
 **No painel o estúdio pode:**
@@ -68,7 +69,29 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 - Recusas e cancelamentos apagam o evento (libertam o horário) e não entram nos relatórios.
 - Profissionais e serviços desativados deixam de aparecer no site, mas o histórico mantém-se.
 
-## 6. Atualizar o código
+## 6. Instalar como app (telemóvel e computador)
+
+Os dois sites são **web apps**, por isso podem ser instalados como uma app normal, com o ícone do Easy Agenda.
+
+| Ficheiro | O que é |
+|---|---|
+| `manifest.webmanifest` | App dos clientes ("Agenda", ícone coral) |
+| `admin.webmanifest` | App do estúdio ("Painel", ícone azul-escuro) |
+| `sw.js` | Guarda os ficheiros da app para abrir rápido e mesmo sem internet |
+| `pwa.js` | Botão "📲 Instalar" e cor da barra do navegador |
+| `icons/` | Ícones (SVG e PNG em vários tamanhos) |
+
+**Como instalar:**
+- **Android / Chrome / Edge:** toca no botão **📲 Instalar** que aparece no topo, ou usa o menu do navegador → *Instalar app*.
+- **iPhone / iPad (Safari):** toca em **Partilhar** ⬆️ e depois em **Adicionar ao ecrã principal**. O botão "Instalar" mostra estas instruções.
+- **Computador (Chrome/Edge):** clica no ícone de instalar na barra de endereço.
+
+**Bom saber:**
+- As marcações e os horários vêm sempre da internet: nunca ficam guardados. Sem rede, a app abre e avisa que está offline.
+- **Ao publicar alterações aos ficheiros**, muda a linha `const VERSION = 'easy-agenda-v1'` no `sw.js` (para `v2`, `v3`, …). Assim os telemóveis recebem a versão nova.
+- O nome da app é "Easy Agenda". Para usar o nome do estúdio, muda `name` e `short_name` no `manifest.webmanifest`.
+
+## 7. Atualizar o código
 
 Usa **Implementar → Gerir implementações → ✏️ → Versão: Nova versão**. Assim o URL mantém-se.
 

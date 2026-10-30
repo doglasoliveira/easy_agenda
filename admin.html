@@ -2,7 +2,16 @@
 <html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fb">
+<link rel="manifest" href="admin.webmanifest">
+<link rel="icon" href="icons/admin.svg" type="image/svg+xml">
+<link rel="icon" href="icons/admin-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/admin-apple-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Painel">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="robots" content="noindex">
 <title>Painel do Estúdio</title>
 <script>
@@ -55,7 +64,15 @@
   /* topo */
   .logo { width: 46px; height: 46px; border-radius: 16px; background: var(--accent); display: grid; place-items: center; font-size: 23px;
     box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .15); flex: none; }
-  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; max-width: 1120px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: max(16px, env(safe-area-inset-top)) 16px 16px; max-width: 1120px; margin: 0 auto; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .top-actions .install { margin-left: 0; }
+  .logo-img { width: 46px; height: 46px; border-radius: 16px; flex: none; display: block; box-shadow: 0 4px 0 rgba(43, 45, 66, .1); }
+  .install { margin-left: auto; flex: none; border: 0; border-radius: 999px; padding: 8px 14px; background: var(--c2); color: #fff; font-weight: 900; font-size: 14px;
+    cursor: pointer; box-shadow: 0 4px 0 #0e8a7c; transition: transform .1s, box-shadow .1s; animation: pop .4s cubic-bezier(.34, 1.56, .64, 1); }
+  .install:active { transform: translateY(3px); box-shadow: 0 1px 0 #0e8a7c; }
+  .install-tip { background: var(--card); border: 3px dashed var(--c2); border-radius: 18px; padding: 12px 14px; font-size: 14px; margin-top: 12px; }
+
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .top h1 { font-size: 21px; }
   .top a { font-size: 13px; }
@@ -214,7 +231,7 @@
 <div id="login" class="login" hidden>
   <form id="loginForm" class="stack">
     <div>
-      <div class="logo" aria-hidden="true">📅</div>
+      <img class="logo-img" src="icons/admin.svg" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:22px;margin:0 auto 10px">
       <h1>Olá! 👋</h1>
       <p class="muted small" style="margin:4px 0 0">Entra com a senha de administração.</p>
     </div>
@@ -227,12 +244,13 @@
 <div id="shell" hidden>
   <header class="top">
     <div class="brand">
-      <div class="logo" aria-hidden="true">📅</div>
+      <img class="logo-img" src="icons/admin.svg" alt="" width="46" height="46">
       <div><h1 id="studioName">Painel</h1>
       <a id="siteLink" target="_blank" rel="noopener" hidden>Ver site de marcações ↗</a></div>
     </div>
-    <button class="btn sm" id="logout">Sair</button>
+    <div class="top-actions"><button id="installBtn" class="install" hidden>📲 Instalar</button><button class="btn sm" id="logout">Sair</button></div>
   </header>
+  <div style="max-width:1120px;margin:-6px auto 8px;padding:0 16px"><div id="installTip" class="install-tip" hidden>📲 No iPhone ou iPad: toca em <b>Partilhar</b> (o quadrado com a seta ⬆️) e depois em <b>Adicionar ao ecrã principal</b>.</div></div>
   <nav class="tabs" id="tabs">
     <button data-tab="reports">📊 Relatórios</button>
     <button data-tab="bookings">🗓️ Marcações <span class="count" id="pendingCount" hidden></span></button>
@@ -1079,5 +1097,6 @@ async function demoCall(op, p) {
   try { await loadAll(); } catch (e) { showLogin(e.message); }
 })();
 </script>
+<script src="pwa.js" defer></script>
 </body>
 </html>

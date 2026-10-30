@@ -1,0 +1,19 @@
+{
+  "id": "./admin.html",
+  "name": "Easy Agenda · Painel do estúdio",
+  "short_name": "Painel",
+  "description": "Gere marcações, profissionais, serviços, folgas e relatórios do estúdio.",
+  "lang": "pt-PT",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#2b2d42",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icons/admin-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/admin-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/admin-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/admin.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
