@@ -5,7 +5,7 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 | Ficheiro | O que é | Onde fica |
 |---|---|---|
 | `index.html` | Site onde os clientes marcam | GitHub Pages |
-| `admin.html` | **Painel do estúdio** (protegido por senha) | GitHub Pages |
+| `admin.html` | **Painel do estúdio** (entrada com e-mail e senha) | GitHub Pages |
 | `manifest.webmanifest`, `admin.webmanifest`, `sw.js`, `pwa.js`, `icons/` | Web app instalável (ícone, offline) | GitHub Pages |
 | `apps-script/Code.gs` + `apps-script/appsscript.json` | Backend: guarda os dados e liga ao Google Calendar | Google Apps Script (conta do estúdio) |
 
@@ -15,7 +15,7 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 - **Profissionais:** criar, editar ou desativar; escolher os serviços que cada um faz e o horário semanal. Se indicares o e-mail do profissional, o calendário dele é partilhado automaticamente com ele.
 - **Serviços:** nome, duração, preço, descrição e ativo/inativo.
 - **Folgas:** férias, consultas ou pausas por profissional (ou para todos), de dia inteiro ou por horas. Dá também para marcar os **dias de estúdio fechado** (feriados).
-- **Definições:** nome, morada, e-mail de notificações, antecedência, confirmação automática e senha.
+- **Definições:** nome, morada, e-mail de notificações, antecedência, confirmação automática, tema, a tua senha e a **equipa** (convidar pessoas por e-mail).
 
 > Abre o `admin.html` sem configurar nada para o ver em **modo demonstração** com dados fictícios.
 
@@ -26,12 +26,11 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
 1. Entra em **script.google.com** com a conta Google do estúdio e cria um **Novo projeto**.
 2. Cola o `Code.gs` no lugar do código que lá está.
 3. Vai a **Definições do projeto** (⚙️), ativa *"Mostrar ficheiro de manifesto appsscript.json"*, abre esse ficheiro no editor e cola o `appsscript.json`. Isto ativa a partilha automática de calendários.
-4. **Senha do painel:** no `Code.gs`, procura `function definirSenhaAdmin`, escreve a senha em `const SENHA = '...'`, escolhe essa função no topo e clica **Executar**. Depois apaga a senha do código e guarda.
-5. Escolhe a função **`setup`** e clica **Executar**. Aceita as permissões (Calendar e e-mail).
-6. Vai a **Implementar → Nova implementação → App da Web**, com:
+4. Escolhe a função **`setup`** e clica **Executar**. Aceita as permissões (Calendar e e-mail).
+5. Vai a **Implementar → Nova implementação → App da Web**, com:
    - Executar como: **Eu**
    - Quem tem acesso: **Qualquer pessoa**
-7. Copia o URL que termina em `/exec`.
+6. Copia o URL que termina em `/exec`.
 
 ## 2. Sites (GitHub Pages), cerca de 5 min
 
@@ -43,11 +42,22 @@ Agenda online para um estúdio com vários profissionais (manicure, aulas de mú
    - Estúdio: `https://<utilizador>.github.io/agenda/admin.html`
 5. No painel, em **Definições**, cola o link do site de clientes. Ele aparece nos e-mails de cancelamento e recusa.
 
-## 3. Primeiros passos no painel
+## 3. Criar a conta e primeiros passos no painel
 
-1. **Serviços:** apaga ou edita os de exemplo e cria os teus.
-2. **Profissionais:** cria cada profissional com os serviços e o horário. O formato do horário é `09:00-13:00, 14:00-19:00`, e dias em branco contam como folga.
-3. **Folgas / feriados:** marca as férias e os dias de estúdio fechado.
+1. **Criar a conta:** abre o painel (`admin.html`). Na primeira vez aparece **"Bem-vindo ao Easy Agenda!"**.
+   - Escreve o e-mail da **conta Google onde instalaste o Apps Script**. Por segurança, só esse e-mail pode criar a conta.
+   - Recebes um **código de 6 dígitos** por e-mail. Escreve-o e escolhe a tua senha. Já está!
+2. **Serviços:** apaga ou edita os de exemplo e cria os teus.
+3. **Profissionais:** cria cada profissional com os serviços e o horário. O formato do horário é `09:00-13:00, 14:00-19:00`, e dias em branco contam como folga.
+4. **Folgas / feriados:** marca as férias e os dias de estúdio fechado.
+
+## Contas do painel
+
+- **Utilizador = e-mail.** Cada pessoa entra com o seu e-mail e a sua senha.
+- **Esqueci-me da senha / primeiro acesso:** no ecrã de entrada, toca em **"Esqueci-me da senha"**, escreve o e-mail e usa o código que chega por e-mail para escolher uma senha nova.
+- **Equipa:** em **Definições → Equipa do painel**, escreve o nome e o e-mail e carrega em **Convidar**. A pessoa recebe um e-mail com o botão **"Criar a minha senha"**: só tem de escolher a senha.
+- Só o **dono** (a conta criada primeiro) pode remover pessoas. Toda a equipa pode convidar.
+- **Se vens de uma versão anterior** (com a senha definida no Apps Script): depois de atualizares o `Code.gs`, o painel pede para criares a conta como na primeira vez. A senha antiga deixa de ser usada.
 
 ## 4. A agenda no telemóvel do profissional
 
@@ -101,4 +111,4 @@ Usa **Implementar → Gerir implementações → ✏️ → Versão: Nova versã
 
 - **E-mails:** uma conta Gmail normal envia 100 por dia. Um pedido online usa 2 a 3 e-mails, o que dá para cerca de 30 a 40 pedidos por dia. Com Google Workspace o limite é 1500.
 - **Relatórios:** cada consulta cobre até 400 dias. Com muitos profissionais e períodos longos, pode demorar alguns segundos.
-- **Segurança:** o `admin.html` é público, mas sem a senha não mostra nem altera nada. A sessão expira ao fim de 12 h, e depois de 10 tentativas erradas o login fica bloqueado durante 15 min.
+- **Segurança:** o `admin.html` é público, mas sem e-mail e senha não mostra nem altera nada. A sessão fica guardada no aparelho durante 30 dias. Depois de 8 tentativas erradas, esse e-mail fica bloqueado durante 15 min. Os códigos valem 15 minutos e os convites 7 dias.

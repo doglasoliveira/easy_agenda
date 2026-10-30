@@ -59,6 +59,22 @@
   .login form { width: 100%; max-width: 380px; background: var(--card); border-radius: 30px; padding: 30px 26px; box-shadow: var(--shadow); text-align: center; }
   .login form .field { text-align: left; }
   .login h1 { font-size: 26px; margin-bottom: 4px; }
+  .login .sub { color: var(--muted); font-size: 15px; margin: 6px 0 0; line-height: 1.5; }
+  .login .links { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .login .links button, .linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+  .code-input { text-align: center; font-size: 30px !important; font-weight: 900 !important; letter-spacing: 12px; padding: 12px 8px 12px 20px !important; font-variant-numeric: tabular-nums; }
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 48px; }
+  .pw-wrap button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: 0; font-size: 20px; cursor: pointer; padding: 6px; }
+  .login .btn.primary { width: 100%; padding: 14px; font-size: 17px; }
+  .login .hello { display: inline-block; animation: wave 2s ease-in-out 1; transform-origin: 70% 70%; }
+  @keyframes wave { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(14deg); } 20%, 40% { transform: rotate(-8deg); } }
+  .who { font-size: 13px; color: var(--muted); font-weight: 700; }
+  .user-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 2px solid var(--line); }
+  .user-row:last-child { border-bottom: 0; }
+  .user-row .avatar { width: 40px; height: 40px; font-size: 15px; border-radius: 13px; }
+  .user-row .info { flex: 1; min-width: 0; }
+  .user-row .info small { display: block; color: var(--muted); overflow-wrap: anywhere; }
   .login .logo { margin: 0 auto 10px; width: 72px; height: 72px; font-size: 36px; border-radius: 24px; }
 
   /* topo */
@@ -244,15 +260,15 @@
 <div id="demoBanner" class="demo" hidden>🧪 Modo demonstração com dados fictícios. Cola o URL do Apps Script em <code>API_URL</code> para ligar ao estúdio real.</div>
 
 <div id="login" class="login" hidden>
-  <form id="loginForm" class="stack">
+  <form id="authForm" class="stack" novalidate>
     <div>
       <img class="logo-img" src="icons/admin.svg" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:22px;margin:0 auto 10px">
-      <h1>Olá! 👋</h1>
-      <p class="muted small" style="margin:4px 0 0">Entra com a senha de administração.</p>
+      <h1 id="authTitle">Olá! 👋</h1>
+      <p class="sub" id="authSub"></p>
     </div>
-    <div class="field"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required></div>
-    <button class="btn primary" type="submit">Entrar</button>
-    <p class="err" id="loginErr" hidden></p>
+    <div id="authFields" class="stack"></div>
+    <button class="btn primary" type="submit" id="authBtn">Entrar</button>
+    <div class="links" id="authLinks"></div>
   </form>
 </div>
 
@@ -260,7 +276,7 @@
   <header class="top">
     <div class="brand">
       <img class="logo-img" src="icons/admin.svg" alt="" width="46" height="46">
-      <div><h1 id="studioName">Painel</h1>
+      <div><h1 id="studioName">Painel</h1><span class="who" id="who"></span>
       <a id="siteLink" target="_blank" rel="noopener" hidden>Ver site de marcações ↗</a></div>
     </div>
     <div class="top-actions"><button id="installBtn" class="install" hidden>📲 Instalar</button><button class="btn sm" id="logout">Sair</button></div>
@@ -293,9 +309,9 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbz59gbBO4dDy4rsdRKIXLw_
 
 const DEMO_MODE = !API_URL;
 const session = {
-  get: k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
-  set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} },
-  del: k => { try { sessionStorage.removeItem(k); } catch (e) {} },
+  get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+  del: k => { try { localStorage.removeItem(k); } catch (e) {} },
 };
 
 let TOKEN = session.get('agenda_token');
@@ -399,26 +415,110 @@ function openDialog(html, onSave, { saveLabel = 'Guardar', extraLeft = '' } = {}
   return form;
 }
 
-/* ---------- arranque e sessão ---------- */
+/* ---------- entrada: e-mail + senha, códigos por e-mail, convites ---------- */
+const AUTH = { mode: 'login', email: '', code: '', name: '', setup: false, hint: '' };
+const eyeBtn = id => `<button type="button" aria-label="Mostrar senha" onclick="const i=document.getElementById('${id}');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁️':'🙈'">👁️</button>`;
+const pwField = (id, label, auto) => `<div class="field"><label for="${id}">${label}</label><div class="pw-wrap"><input id="${id}" type="password" autocomplete="${auto}" minlength="8" required>${eyeBtn(id)}</div></div>`;
+
 function showLogin(msg) {
   $('#shell').hidden = true; $('#login').hidden = false;
-  const e = $('#loginErr'); e.hidden = !msg; e.textContent = msg || '';
-  setTimeout(() => $('#pw').focus(), 50);
+  renderAuth();
+  if (msg) toast(msg, true);
 }
-function logout(msg) { TOKEN = null; session.del('agenda_token'); showLogin(msg); }
+function logout(msg) { TOKEN = null; session.del('agenda_token'); AUTH.mode = 'login'; showLogin(msg); }
 
-$('#loginForm').onsubmit = async e => {
-  e.preventDefault();
-  const btn = e.target.querySelector('button');
-  btn.disabled = true; $('#loginErr').hidden = true;
-  try {
-    const r = await call('login', { password: $('#pw').value });
-    TOKEN = r.token; session.set('agenda_token', TOKEN);
-    $('#pw').value = '';
-    await loadAll();
-  } catch (ex) { showLogin(ex.message); }
-  finally { btn.disabled = false; }
+function renderAuth() {
+  const m = AUTH.mode, e = esc(AUTH.email);
+  const V = {
+    setup: ['👋', 'Bem-vindo ao Easy Agenda!', `Vamos criar a conta do teu estúdio. Usa o e-mail da conta Google onde instalaste o Easy Agenda${AUTH.hint ? ` (<b>${esc(AUTH.hint)}</b>)` : ''}.`,
+      `<div class="field"><label for="aName">Como te chamas?</label><input id="aName" autocomplete="name" value="${esc(AUTH.name)}" maxlength="60" placeholder="Opcional"></div>
+       <div class="field"><label for="aEmail">E-mail</label><input id="aEmail" type="email" autocomplete="email" value="${e}" required></div>`,
+      'Enviar código', ''],
+    login: ['👋', 'Olá!', 'Entra com o teu e-mail e senha.',
+      `<div class="field"><label for="aEmail">E-mail</label><input id="aEmail" type="email" autocomplete="username" value="${e}" required></div>
+       ${pwField('aPw', 'Senha', 'current-password')}`,
+      'Entrar', `<button type="button" data-go="forgot">Esqueci-me da senha</button><button type="button" data-go="forgot">Primeiro acesso</button>`],
+    forgot: ['🔑', 'Vamos criar uma senha nova', 'Escreve o teu e-mail. Enviamos um código de 6 dígitos para confirmares que és tu.',
+      `<div class="field"><label for="aEmail">E-mail</label><input id="aEmail" type="email" autocomplete="email" value="${e}" required></div>`,
+      'Enviar código', `<button type="button" data-go="login">← Voltar</button>`],
+    code: ['📬', 'Verifica o teu e-mail', `Enviámos um código para <b>${e}</b>. Pode demorar um minuto (vê também no spam).`,
+      `<div class="field"><label for="aCode">Código de 6 dígitos</label><input id="aCode" class="code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
+       ${pwField('aPw', AUTH.setup ? 'Escolhe uma senha' : 'Nova senha', 'new-password')}
+       <p class="muted small" style="margin:-6px 0 0;text-align:left">Pelo menos 8 caracteres.</p>`,
+      AUTH.setup ? 'Criar conta' : 'Guardar senha', `<button type="button" data-go="back">← Voltar</button><button type="button" data-resend>Reenviar código</button>`],
+    invite: ['🎉', 'Cria a tua senha', `O teu utilizador é <b>${e}</b>. Escolhe uma senha e já está!`,
+      `${pwField('aPw', 'Senha', 'new-password')}<p class="muted small" style="margin:-6px 0 0;text-align:left">Pelo menos 8 caracteres.</p>`,
+      'Criar senha e entrar', `<button type="button" data-go="login">Já tenho senha</button>`],
+    loading: ['⏳', 'Um momento…', '', '<div class="dots"><i></i><i></i><i></i></div>', '', ''],
+  }[m];
+  $('#authTitle').innerHTML = `${esc(V[1])} <span class="hello">${V[0]}</span>`;
+  $('#authSub').innerHTML = V[2]; $('#authSub').hidden = !V[2];
+  $('#authFields').innerHTML = V[3];
+  $('#authBtn').textContent = V[4]; $('#authBtn').hidden = !V[4];
+  $('#authLinks').innerHTML = V[5]; $('#authLinks').hidden = !V[5];
+  const first = $('#authFields input:not([value]), #authFields input[value=""]') || $('#authFields input');
+  if (first) setTimeout(() => first.focus(), 60);
+  const code = $('#aCode');
+  if (code) code.oninput = () => { code.value = code.value.replace(/\D/g, '').slice(0, 6); if (code.value.length === 6) $('#aPw').focus(); };
+}
+
+$('#authLinks').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.resend !== undefined) {
+    try { await call('requestCode', { email: AUTH.email }); toast('Código reenviado 📬'); } catch (ex) { toast(ex.message, true); }
+    return;
+  }
+  const em = $('#aEmail'); if (em) AUTH.email = em.value.trim();
+  AUTH.mode = b.dataset.go === 'back' ? (AUTH.setup ? 'setup' : 'forgot') : b.dataset.go;
+  renderAuth();
 };
+
+$('#authForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('#authBtn'); const label = btn.textContent;
+  const val = id => ($('#' + id)?.value || '').trim();
+  try {
+    if (['setup', 'forgot', 'login'].includes(AUTH.mode)) {
+      AUTH.email = val('aEmail').toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(AUTH.email)) throw new Error('Escreve um e-mail válido.');
+    }
+    if (['login', 'code', 'invite'].includes(AUTH.mode) && !val('aPw')) throw new Error('Escreve a senha.');
+    if (['code', 'invite'].includes(AUTH.mode) && $('#aPw').value.length < 8) throw new Error('A senha precisa de pelo menos 8 caracteres.');
+    if (AUTH.mode === 'code' && val('aCode').length !== 6) throw new Error('O código tem 6 dígitos.');
+    btn.disabled = true; btn.textContent = 'Um momento…';
+    let r;
+    if (AUTH.mode === 'login') r = await call('login', { email: AUTH.email, password: $('#aPw').value });
+    else if (AUTH.mode === 'setup' || AUTH.mode === 'forgot') {
+      if (AUTH.mode === 'setup') AUTH.name = val('aName');
+      await call('requestCode', { email: AUTH.email });
+      AUTH.mode = 'code'; renderAuth(); return;
+    } else {
+      r = await call('setPassword', { email: AUTH.email, code: AUTH.mode === 'invite' ? AUTH.code : val('aCode'),
+        password: $('#aPw').value, name: AUTH.name });
+    }
+    TOKEN = r.token; session.set('agenda_token', TOKEN);
+    if (location.search) history.replaceState(null, '', location.pathname);
+    await loadAll();
+    if (AUTH.mode !== 'login') toast(AUTH.setup ? 'Conta criada! Bem-vindo 🎉' : 'Senha guardada 🎉');
+    AUTH.setup = false; AUTH.mode = 'login';
+  } catch (ex) { toast(ex.message, true); }
+  finally { btn.disabled = false; if (btn.textContent === 'Um momento…') btn.textContent = label; }
+};
+
+async function startAuth() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('email') && q.get('code')) {          // link do convite
+    AUTH.email = q.get('email').toLowerCase(); AUTH.code = q.get('code'); AUTH.mode = 'invite';
+    return showLogin();
+  }
+  AUTH.mode = 'loading'; showLogin();
+  try {
+    const st = await call('status');
+    AUTH.setup = st.needsSetup; AUTH.hint = st.ownerHint || '';
+    AUTH.mode = st.needsSetup ? 'setup' : 'login';
+  } catch (ex) { AUTH.mode = 'login'; toast(ex.message, true); }
+  renderAuth();
+}
 $('#logout').onclick = () => logout();
 $('#tabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) { TAB = b.dataset.tab; render(); } };
 
@@ -436,6 +536,7 @@ function applyTheme(t) {
 }
 function applyHeader() {
   applyTheme(DATA.settings.theme);
+  $('#who').textContent = DATA.me ? '· ' + (DATA.me.name || DATA.me.email) : '';
   $('#studioName').textContent = DATA.settings.studioName;
   document.title = 'Painel · ' + DATA.settings.studioName;
   const link = $('#siteLink');
@@ -988,11 +1089,21 @@ function renderSettings(el) {
         <div><button class="btn primary" type="submit">Guardar definições</button></div>
       </form>
     </section>
-    <section class="card"><h3>Senha do painel</h3>
+    <section class="card"><h3>👤 A minha conta</h3>
+      <p class="muted" style="margin:-4px 0 14px">Entras com <b>${esc(DATA.me?.email || '')}</b>${DATA.me?.role === 'owner' ? ' · dono da conta' : ''}.</p>
       <form id="pwForm" class="grid-auto" novalidate>
         <div class="field"><label>Senha atual</label><input name="current" type="password" autocomplete="current-password"></div>
         <div class="field"><label>Nova senha</label><input name="next" type="password" minlength="8" autocomplete="new-password"></div>
         <div class="field" style="align-self:end"><button class="btn" type="submit">Alterar senha</button></div>
+      </form>
+    </section>
+    <section class="card"><h3>👥 Equipa do painel</h3>
+      <p class="muted small" style="margin:-4px 0 12px">Convida quem também gere as marcações (receção, sócios…). Cada pessoa entra com o seu e-mail e a sua senha.</p>
+      <div id="users"><div class="dots"><i></i><i></i><i></i></div></div>
+      <form id="inviteForm" class="inline" style="margin-top:14px" novalidate>
+        <input name="name" placeholder="Nome" maxlength="60" style="flex:1 1 140px">
+        <input name="email" type="email" placeholder="E-mail" required style="flex:2 1 200px">
+        <button class="btn primary" type="submit">✉️ Convidar</button>
       </form>
     </section>`;
 
@@ -1018,6 +1129,45 @@ function renderSettings(el) {
       TOKEN = r.token; session.set('agenda_token', TOKEN); f.reset(); toast('Senha alterada.');
     } catch (ex) { toast(ex.message, true); }
   };
+  $('#inviteForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, email = f.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Escreve um e-mail válido.', true);
+    const btn = f.querySelector('button'); btn.disabled = true;
+    try {
+      const r = await call('addUser', { email, name: f.name.value, panelUrl: location.origin + location.pathname });
+      drawUsers(r.users); f.reset();
+      popup({ icon: '✉️', title: 'Convite enviado!', text: `${email} vai receber um e-mail com um link para criar a senha. O convite vale 7 dias.`, ok: 'Fixe!', kind: 'ok' });
+    } catch (ex) { toast(ex.message, true); }
+    finally { btn.disabled = false; }
+  };
+  $('#users').onclick = async e => {
+    const b = e.target.closest('button[data-email]'); if (!b) return;
+    const { email, act } = b.dataset;
+    if (act === 'resend') {
+      b.disabled = true;
+      try { drawUsers((await call('addUser', { email, panelUrl: location.origin + location.pathname })).users); toast('Convite reenviado ✉️'); }
+      catch (ex) { toast(ex.message, true); b.disabled = false; }
+      return;
+    }
+    if (!(await ask(`Remover ${email}?`, 'Esta pessoa deixa de conseguir entrar no painel.', { icon: '👋', ok: 'Remover', danger: true }))) return;
+    try { drawUsers((await call('removeUser', { email })).users); toast('Acesso removido.'); } catch (ex) { toast(ex.message, true); }
+  };
+  call('listUsers').then(r => drawUsers(r.users)).catch(ex => ($('#users').innerHTML = `<p class="err">${esc(ex.message)}</p>`));
+}
+
+function drawUsers(users) {
+  const box = $('#users'); if (!box) return;
+  const owner = DATA.me?.role === 'owner';
+  box.innerHTML = users.map((u, i) => `<div class="user-row">
+    <div class="avatar" style="background:${COLORS[i % COLORS.length]}">${esc(initials(u.name || u.email))}</div>
+    <div class="info"><b>${esc(u.name || u.email.split('@')[0])}</b>
+      ${u.role === 'owner' ? ' <span class="badge b-done">Dono</span>' : u.active ? ' <span class="badge b-confirmed">Equipa</span>' : ' <span class="badge b-pending">Convite pendente</span>'}
+      ${DATA.me?.email === u.email ? ' <span class="badge b-off">tu</span>' : ''}
+      <small>${esc(u.email)}</small></div>
+    ${!u.active ? `<button class="btn sm" data-act="resend" data-email="${esc(u.email)}">Reenviar</button>` : ''}
+    ${owner && u.role !== 'owner' ? `<button class="btn sm danger" data-act="remove" data-email="${esc(u.email)}">Remover</button>` : ''}
+  </div>`).join('');
 }
 
 /* =============================== MODO DEMONSTRAÇÃO =============================== */
@@ -1075,7 +1225,9 @@ const demo = (() => {
   }
   blocks.push({ id: 'k1', pro: 'ana', date: iso(addDays(t0, 12)), endDate: iso(addDays(t0, 16)), allDay: true, time: '', endTime: '', reason: 'Férias', managed: true });
   blocks.push({ id: 'k2', pro: 'rui', date: iso(addDays(t0, 5)), endDate: iso(addDays(t0, 5)), allDay: false, time: '15:00', endTime: '17:00', reason: 'Consulta', managed: true });
-  return { settings, services, professionals, closedDates, bookings, blocks, toMin };
+  const me = { email: 'estudio@gmail.com', name: 'Doglas', role: 'owner', active: true };
+  const users = [me, { email: 'rececao@exemplo.pt', name: 'Rita', role: 'admin', active: true }, { email: 'joao@exemplo.pt', name: 'João', role: 'admin', active: false, invited: true }];
+  return { settings, services, professionals, closedDates, bookings, blocks, toMin, me, users };
 })();
 
 function demoRow(b) {
@@ -1095,9 +1247,16 @@ async function demoCall(op, p) {
   const upsert = (list, item) => { const i = list.findIndex(x => x.id === item.id); if (i > -1) list[i] = item; else list.push(item); };
   const slug = (name, list) => { let b = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'item', id = b, n = 2; while (list.some(x => x.id === id)) id = b + '-' + n++; return id; };
   switch (op) {
-    case 'login': return { token: 'demo' };
+    case 'status': return { needsSetup: /setup/.test(location.search), ownerHint: 'es•••@gmail.com' };
+    case 'login': return { token: 'demo', me: D.me };
+    case 'requestCode': return { ok: true };
+    case 'setPassword': if (p.code !== '123456') throw new Error('Código inválido ou expirado. (No modo demonstração o código é 123456.)'); return { token: 'demo', me: D.me };
+    case 'listUsers': return { users: clone(D.users) };
+    case 'addUser': { const u = D.users.find(x => x.email === p.email); if (u && u.active) throw new Error(p.email + ' já tem acesso ao painel.');
+      if (!u) D.users.push({ email: p.email, name: p.name || '', role: 'admin', active: false, invited: true }); return { users: clone(D.users) }; }
+    case 'removeUser': D.users = D.users.filter(x => x.email !== p.email); return { users: clone(D.users) };
     case 'changePassword': return { token: 'demo' };
-    case 'getAll': return clone({ settings: D.settings, services: D.services, professionals: D.professionals, closedDates: D.closedDates, adminEmail: 'estudio@gmail.com' });
+    case 'getAll': return clone({ me: D.me, settings: D.settings, services: D.services, professionals: D.professionals, closedDates: D.closedDates, adminEmail: 'estudio@gmail.com' });
     case 'listBookings':
       return { rows: D.bookings.filter(b => b.date >= p.from && b.date <= p.to && (!p.pro || b.pro === p.pro)).map(demoRow).sort((a, b) => a.start - b.start) };
     case 'setStatus': {
@@ -1168,9 +1327,10 @@ async function demoCall(op, p) {
 /* =============================== INÍCIO =============================== */
 (async () => {
   $('#demoBanner').hidden = !DEMO_MODE;
-  if (DEMO_MODE) { TOKEN = 'demo'; return loadAll(); }
-  if (!TOKEN) return showLogin();
-  try { await loadAll(); } catch (e) { showLogin(e.message); }
+  const authUrl = /[?&](email|setup|login)/.test(location.search);
+  if (DEMO_MODE && !authUrl) { TOKEN = 'demo'; return loadAll(); }
+  if (!TOKEN || authUrl) return startAuth();
+  try { await loadAll(); } catch (e) { startAuth(); }
 })();
 </script>
 <script src="pwa.js" defer></script>

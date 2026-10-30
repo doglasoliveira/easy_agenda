@@ -7,7 +7,7 @@
  *   (aparece no Google Calendar ou no Calendário do iPhone).
  * - Pedidos online entram como "⏳ PENDENTE" e são aprovados no painel ou pelo e-mail.
  *
- * Primeira configuração: 1) definirSenhaAdmin  2) setup  3) Implementar como App da Web. Ver README.
+ * Primeira configuração: 1) setup  2) Implementar como App da Web  3) Abrir o painel e criar a conta. Ver README.
  */
 
 /* Valores iniciais: usados apenas até guardares algo no painel. */
@@ -48,23 +48,15 @@ const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sáb
 
 /* ============================ CONFIGURAÇÃO INICIAL ============================ */
 
-/** 1) Escreve a senha do painel na linha abaixo, clica Executar e depois apaga-a do código. */
-function definirSenhaAdmin() {
-  const SENHA = ''; // ← senha do painel (mínimo 8 caracteres)
-  if (String(SENHA).length < 8) throw new Error('Escreve uma senha com pelo menos 8 caracteres na linha "const SENHA".');
-  setPassword_(SENHA);
-  Logger.log('Senha do painel definida. Já podes apagá-la do código.');
-}
-
-/** 2) Autoriza as permissões e cria os calendários dos profissionais iniciais. */
+/** Executa uma vez no editor: autoriza as permissões e cria os calendários dos profissionais iniciais. */
 function setup() {
   secret_();
   MailApp.getRemainingDailyQuota();
   const pros = pros_();
   pros.forEach(p => { ensureCalendar_(p); Logger.log(p.name + ' → ' + p.calendarId); });
   setStore_('professionals', pros);
-  if (!prop_('ADMIN_PW')) Logger.log('⚠️ Falta definir a senha do painel: executa definirSenhaAdmin.');
   Logger.log('Pronto. Agora: Implementar → Nova implementação → App da Web.');
+  Logger.log('Depois abre o painel (admin.html) e cria a conta com o e-mail ' + ownerEmail_() + '.');
 }
 
 /* ============================== ENTRADAS HTTP ============================== */
@@ -98,16 +90,30 @@ function doPost(e) {
 /* ============================== API DO PAINEL ============================== */
 
 function admin_(d) {
-  if (d.op === 'login') return login_(d.password);
-  verifyToken_(d.token);
+  // Operações sem sessão iniciada (ecrã de entrada)
+  const open = ['status', 'login', 'requestCode', 'setPassword'];
+  if (open.indexOf(d.op) > -1) {
+    const lk = LockService.getScriptLock();
+    lk.waitLock(20000);
+    try {
+      if (d.op === 'status') return authStatus_();
+      if (d.op === 'login') return login_(d.email, d.password);
+      if (d.op === 'requestCode') return requestCode_(d.email);
+      return setPassword_(d);
+    } finally { lk.releaseLock(); }
+  }
+  const me = verifyToken_(d.token);
 
   const writes = ['saveService', 'deleteService', 'savePro', 'deletePro', 'saveSettings', 'saveClosed',
-                  'setStatus', 'addBlock', 'deleteBlock', 'changePassword'];
+                  'setStatus', 'addBlock', 'deleteBlock', 'changePassword', 'addUser', 'removeUser'];
   const lock = LockService.getScriptLock();
   if (writes.indexOf(d.op) > -1) lock.waitLock(20000);
   try {
     switch (d.op) {
-      case 'getAll':         return getAll_();
+      case 'getAll':         return Object.assign(getAll_(), { me: publicUser_(me) });
+      case 'listUsers':      return { users: users_().map(publicUser_) };
+      case 'addUser':        return addUser_(me, d);
+      case 'removeUser':     return removeUser_(me, d.email);
       case 'saveService':    return saveService_(d.service);
       case 'deleteService':  return deleteService_(d.id);
       case 'savePro':        return savePro_(d.pro);
@@ -121,7 +127,7 @@ function admin_(d) {
       case 'listBlocks':     return listBlocks_(d);
       case 'addBlock':       return addBlock_(d);
       case 'deleteBlock':    return deleteBlock_(d);
-      case 'changePassword': return changePassword_(d);
+      case 'changePassword': return changePassword_(me, d);
       default: throw new Error('Operação desconhecida.');
     }
   } finally {
@@ -251,14 +257,6 @@ function saveClosed_(dates) {
   const uniq = list.filter((d, i) => list.indexOf(d) === i).sort();
   setStore_('closedDates', uniq);
   return { closedDates: uniq };
-}
-
-function changePassword_(d) {
-  const stored = (prop_('ADMIN_PW') || '').split(':');
-  if (sha256_(stored[0] + String(d.current || '')) !== stored[1]) throw new Error('A senha atual está incorreta.');
-  if (String(d.next || '').length < 8) throw new Error('A nova senha precisa de pelo menos 8 caracteres.');
-  setPassword_(d.next);
-  return login_(d.next);
 }
 
 /* ---------- Marcações ---------- */
@@ -614,39 +612,192 @@ function deleteBlock_(d) {
   return { ok: true };
 }
 
-/* ============================== AUTENTICAÇÃO ============================== */
+/* ============================== CONTAS DO PAINEL ============================== */
+/* Cada pessoa entra com o seu e-mail e senha. A primeira conta (dono) só pode ser criada com o e-mail
+   da conta Google onde o Easy Agenda está instalado, confirmado com um código enviado por e-mail. */
 
-function setPassword_(pw) {
-  const salt = Utilities.getUuid();
-  PropertiesService.getScriptProperties().setProperty('ADMIN_PW', salt + ':' + sha256_(salt + pw));
+const SESSION_DAYS = 30;
+
+function users_() { return getStore_('users', []); }
+function normEmail_(e) { return String(e || '').trim().toLowerCase(); }
+function ownerEmail_() { return normEmail_(Session.getEffectiveUser().getEmail()); }
+function maskEmail_(e) { const p = String(e).split('@'); return p[0].slice(0, 2) + '•••@' + (p[1] || ''); }
+function publicUser_(u) {
+  return { email: u.email, name: u.name || '', role: u.role, active: !!u.hash,
+           invited: !!(u.inviteHash && u.inviteExp > Date.now()) };
 }
 
-function login_(password) {
-  const cache = CacheService.getScriptCache();
-  const fails = +(cache.get('login_fails') || 0);
-  if (fails >= 10) throw new Error('Demasiadas tentativas. Tenta de novo daqui a 15 minutos.');
-  const stored = prop_('ADMIN_PW');
-  if (!stored) throw new Error('A senha do painel ainda não foi definida (executa definirSenhaAdmin no Apps Script).');
-  const parts = stored.split(':');
-  if (sha256_(parts[0] + String(password || '')) !== parts[1]) {
-    cache.put('login_fails', String(fails + 1), 900);
-    Utilities.sleep(800);
-    throw new Error('Senha incorreta.');
+function authStatus_() {
+  const n = users_().length;
+  return { needsSetup: !n, ownerHint: n ? '' : maskEmail_(ownerEmail_()) };
+}
+
+function newCode_() {
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Date.now());
+  const n = ((bytes[0] & 0xff) << 16 | (bytes[1] & 0xff) << 8 | (bytes[2] & 0xff)) % 1000000;
+  return ('00000' + n).slice(-6);
+}
+
+function codeMail_(email, code, intro) {
+  MailApp.sendEmail({
+    to: email, name: 'Easy Agenda',
+    subject: code + ' é o teu código do Easy Agenda',
+    htmlBody: mail_('O teu código', intro +
+      '<div style="font-size:36px;font-weight:800;letter-spacing:10px;margin:18px 0;color:#2b2d42">' + code + '</div>' +
+      '<small style="color:#888">Válido durante 15 minutos. Se não foste tu, podes ignorar este e-mail.</small>'),
+  });
+}
+
+function requestCode_(emailIn) {
+  const email = normEmail_(emailIn);
+  if (!EMAIL_RE.test(email)) throw new Error('Escreve um e-mail válido.');
+  const users = users_();
+  const setup = !users.length;
+  if (setup && email !== ownerEmail_()) {
+    throw new Error('Para criar a conta do estúdio usa o e-mail da conta Google onde instalaste o Easy Agenda (' + maskEmail_(ownerEmail_()) + ').');
   }
-  cache.remove('login_fails');
-  const exp = Date.now() + 12 * 3600e3;
-  return { token: exp + '.' + sign_('admin|' + exp + '|' + parts[1]) };
+  if (!setup && !users.some(u => u.email === email)) return { ok: true }; // não revela quem tem conta
+
+  const cache = CacheService.getScriptCache();
+  const sent = +(cache.get('sent_' + email) || 0);
+  if (sent >= 3) throw new Error('Já enviámos vários códigos. Espera uns minutos e tenta de novo.');
+  cache.put('sent_' + email, String(sent + 1), 900);
+
+  const code = newCode_();
+  cache.put('code_' + email, JSON.stringify({ h: sha256_(email + '|' + code), n: 0 }), 900);
+  codeMail_(email, code, setup ? 'Usa este código para criar a conta do teu estúdio no Easy Agenda:' : 'Usa este código para definires a tua senha do Easy Agenda:');
+  return { ok: true };
+}
+
+function setPassword_(d) {
+  const email = normEmail_(d.email);
+  const code = String(d.code || '').replace(/\D/g, '');
+  const password = String(d.password || '');
+  if (password.length < 8) throw new Error('A senha precisa de pelo menos 8 caracteres.');
+
+  const users = users_();
+  const setup = !users.length;
+  let user = users.filter(u => u.email === email)[0];
+  if (setup && email !== ownerEmail_()) throw new Error('Código inválido ou expirado.');
+  if (!setup && !user) throw new Error('Código inválido ou expirado.');
+
+  const h = sha256_(email + '|' + code);
+  let ok = !!(user && user.inviteHash && user.inviteExp > Date.now() && user.inviteHash === h);
+  const cache = CacheService.getScriptCache();
+  if (!ok) {
+    const raw = cache.get('code_' + email);
+    if (raw) {
+      const o = JSON.parse(raw);
+      if (o.n >= 5) { cache.remove('code_' + email); throw new Error('Demasiadas tentativas. Pede um código novo.'); }
+      if (o.h === h) ok = true;
+      else { o.n++; cache.put('code_' + email, JSON.stringify(o), 900); }
+    }
+  }
+  if (!ok) throw new Error('Código inválido ou expirado.');
+  cache.remove('code_' + email);
+
+  if (setup) {
+    user = { email, name: clean_(d.name, 60), role: 'owner', createdAt: Date.now() };
+    users.push(user);
+  }
+  if (d.name && !user.name) user.name = clean_(d.name, 60);
+  user.salt = Utilities.getUuid();
+  user.hash = sha256_(user.salt + password);
+  delete user.inviteHash;
+  delete user.inviteExp;
+  setStore_('users', users);
+  return issueToken_(user);
+}
+
+function login_(emailIn, password) {
+  const email = normEmail_(emailIn);
+  const cache = CacheService.getScriptCache();
+  const fails = +(cache.get('fails_' + email) || 0);
+  if (fails >= 8) throw new Error('Demasiadas tentativas. Espera 15 minutos ou usa "Esqueci-me da senha".');
+  const users = users_();
+  if (!users.length) throw new Error('Ainda não existe conta. Cria primeiro a conta do estúdio.');
+  const user = users.filter(u => u.email === email)[0];
+  if (!user || !user.hash || sha256_(user.salt + String(password || '')) !== user.hash) {
+    cache.put('fails_' + email, String(fails + 1), 900);
+    Utilities.sleep(600);
+    throw new Error(user && !user.hash ? 'Ainda não criaste a tua senha. Usa o link do convite ou "Esqueci-me da senha".' : 'E-mail ou senha incorretos.');
+  }
+  cache.remove('fails_' + email);
+  return issueToken_(user);
+}
+
+function issueToken_(user) {
+  const exp = Date.now() + SESSION_DAYS * 86400e3;
+  const id = Utilities.base64EncodeWebSafe(user.email).replace(/=+$/, '');
+  return { token: id + '.' + exp + '.' + sign_('admin|' + user.email + '|' + exp + '|' + user.hash), me: publicUser_(user) };
 }
 
 function verifyToken_(t) {
   const parts = String(t || '').split('.');
-  const exp = +parts[0];
-  const hash = (prop_('ADMIN_PW') || '').split(':')[1] || '';
-  if (!exp || exp < Date.now() || !hash || parts[1] !== sign_('admin|' + exp + '|' + hash)) {
-    const e = new Error('Sessão expirada. Entra novamente.');
+  let user = null;
+  try {
+    const email = Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0] + '==='.slice((parts[0].length + 3) % 4))).getDataAsString();
+    user = users_().filter(u => u.email === email)[0];
+  } catch (e) { /* token inválido */ }
+  const exp = +parts[1];
+  if (!user || !user.hash || !exp || exp < Date.now() || parts[2] !== sign_('admin|' + user.email + '|' + exp + '|' + user.hash)) {
+    const e = new Error('A sessão terminou. Entra novamente.');
     e.auth = true;
     throw e;
   }
+  return user;
+}
+
+function changePassword_(me, d) {
+  const users = users_();
+  const user = users.filter(u => u.email === me.email)[0];
+  if (sha256_(user.salt + String(d.current || '')) !== user.hash) throw new Error('A senha atual está incorreta.');
+  if (String(d.next || '').length < 8) throw new Error('A nova senha precisa de pelo menos 8 caracteres.');
+  user.salt = Utilities.getUuid();
+  user.hash = sha256_(user.salt + d.next);
+  setStore_('users', users);
+  return issueToken_(user);
+}
+
+function addUser_(me, d) {
+  const email = normEmail_(d.email);
+  if (!EMAIL_RE.test(email)) throw new Error('Escreve um e-mail válido.');
+  const users = users_();
+  let user = users.filter(u => u.email === email)[0];
+  if (user && user.hash) throw new Error(email + ' já tem acesso ao painel.');
+  if (!user) { user = { email, role: 'admin', createdAt: Date.now() }; users.push(user); }
+  user.name = clean_(d.name, 60) || user.name || '';
+  const code = newCode_();
+  user.inviteHash = sha256_(email + '|' + code);
+  user.inviteExp = Date.now() + 7 * 86400e3;
+  setStore_('users', users);
+
+  const base = /^https:\/\//.test(d.panelUrl || '') ? String(d.panelUrl).split(/[?#]/)[0] : '';
+  const link = base ? base + '?email=' + encodeURIComponent(email) + '&code=' + code : '';
+  const st = settings_();
+  MailApp.sendEmail({
+    to: email, name: st.studioName, replyTo: me.email,
+    subject: 'Convite para o painel de ' + st.studioName,
+    htmlBody: mail_('Foste convidado(a)! 🎉',
+      'Olá' + (user.name ? ' ' + esc_(user.name) : '') + ',<br><br>' + esc_(me.name || me.email) +
+      ' convidou-te para gerir as marcações de <b>' + esc_(st.studioName) + '</b> no Easy Agenda.' +
+      (link ? '<br><br>' + btn_(link, 'Criar a minha senha', '#ff5c5c') : '') +
+      '<br><br>O teu utilizador é este e-mail: <b>' + esc_(email) + '</b><br>Código do convite: <b style="letter-spacing:3px">' + code + '</b>' +
+      '<br><small style="color:#888">O convite é válido durante 7 dias.</small>'),
+  });
+  return { users: users.map(publicUser_) };
+}
+
+function removeUser_(me, emailIn) {
+  const email = normEmail_(emailIn);
+  if (me.role !== 'owner') throw new Error('Só o dono da conta pode remover pessoas.');
+  const users = users_();
+  const user = users.filter(u => u.email === email)[0];
+  if (!user) throw new Error('Pessoa não encontrada.');
+  if (user.role === 'owner') throw new Error('Não é possível remover o dono da conta.');
+  const rest = users.filter(u => u.email !== email);
+  setStore_('users', rest);
+  return { users: rest.map(publicUser_) };
 }
 
 /* ============================== ARMAZENAMENTO ============================== */
