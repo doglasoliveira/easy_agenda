@@ -346,6 +346,15 @@
     .login { padding: max(16px, env(safe-area-inset-top)) 14px 16px; align-items: start; }
     .login form { margin-top: 6vh; box-shadow: 0 1px 0 var(--line), 0 1px 3px rgba(0, 0, 0, .04); }
   }
+
+  /* "Reduzir movimento" ativo: os indicadores de carregamento continuam a dar sinal de vida,
+     mas sem movimento (só acendem e apagam), para nunca parecer que o app bloqueou */
+  @media (prefers-reduced-motion: reduce) {
+    .busy .bdots i, .dots i, .spinner i { animation: softBlink 1.2s ease-in-out infinite !important; }
+    .busy .bdots i:nth-child(2), .dots i:nth-child(2), .spinner i:nth-child(2) { animation-delay: .2s !important; }
+    .busy .bdots i:nth-child(3), .dots i:nth-child(3), .spinner i:nth-child(3) { animation-delay: .4s !important; }
+  }
+  @keyframes softBlink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 </style>
 </head>
 <body>
