@@ -110,7 +110,7 @@
   .field label, .lbl { font-size: 13px; font-weight: 800; color: var(--muted); }
   input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 14px; border: 3px solid var(--line); background: var(--soft); color: var(--ink);
     font-size: 15px; font-weight: 700; min-width: 0; transition: border-color .15s, background .15s; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c3); background: var(--card); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c3); background-color: var(--card); }
   input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 0; accent-color: var(--accent); }
   .field label.check { font-weight: 700; color: var(--ink); font-size: 15px; }
   .check { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
@@ -286,6 +286,17 @@
   body { -webkit-tap-highlight-color: transparent; }
   button, .tabs, .seg label, .chip, .check { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
   input, select, textarea { font-size: 16px; }              /* 16px evita o zoom automático do iPhone ao tocar */
+  /* Todos os campos com a mesma altura e aspeto (o iPhone desenha data/hora/listas à sua maneira) */
+  input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select { height: 48px; line-height: 1.2; min-width: 0; max-width: 100%; }
+  input.code-input { height: 64px; }
+  input[type=date], input[type=time], select { -webkit-appearance: none; appearance: none; display: block; width: 100%; text-align: left; }
+  input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-and-time-value { text-align: left; margin: 0; min-height: 1.2em; }
+  input[type=date]::-webkit-datetime-edit, input[type=time]::-webkit-datetime-edit { padding: 0; }
+  input[type=date]::-webkit-calendar-picker-indicator, input[type=time]::-webkit-calendar-picker-indicator { margin: 0 0 0 6px; opacity: .55; cursor: pointer; }
+  select { padding-right: 38px; cursor: pointer; text-overflow: ellipsis;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5 6 6l4.5-4.5' fill='none' stroke='%237a7f99' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; background-size: 12px 8px; }
+  .inline input { width: auto; }
   .seg label { position: relative; }
   .seg input { width: 1px; height: 1px; margin: 0; }        /* o rádio escondido não pode alargar a página */
   .tabs button { display: inline-flex; align-items: center; gap: 6px; }
@@ -1277,7 +1288,7 @@ function renderBlocks(el) {
         <div class="grid-auto">
           <div class="field"><label>De</label><input type="date" name="from" value="${t}" required></div>
           <div class="field"><label>Até</label><input type="date" name="to" value="${t}" required></div>
-          <div class="field"><label>Duração</label><select name="allDay"><option value="1">Dia inteiro</option><option value="0">Só algumas horas</option></select></div>
+          <div class="field"><label>Duração</label><select name="allDay"><option value="1">Dia inteiro</option><option value="0">Por horas</option></select></div>
           <div class="field" data-hrs hidden><label>Das</label><input type="time" name="start" value="12:00" step="300"></div>
           <div class="field" data-hrs hidden><label>Às</label><input type="time" name="end" value="14:00" step="300"></div>
         </div>
